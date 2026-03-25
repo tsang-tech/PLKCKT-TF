@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V23</title>
+    <title>PLKCKT 田徑隊管理系統 V24</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -51,7 +51,7 @@
 <body>
 
 <div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V23</h1>
+    <h1>PLKCKT 田徑隊管理系統 V24</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
@@ -73,7 +73,7 @@
             </div>
             <div class="grid" style="margin-top:10px;">
                 <select id="resEvent"></select>
-                <input type="number" id="resVal" step="0.01" placeholder="成績 (秒/米)">
+                <input type="number" id="resVal" step="0.001" placeholder="成績 (秒/米)">
                 <input type="text" id="resAward" placeholder="備註">
                 <button id="saveBtn" class="btn btn-blue" onclick="saveRecord()">💾 儲存數據</button>
                 <button id="cancelBtn" class="btn btn-dark" style="display:none;" onclick="cancelEdit()">取消修改</button>
@@ -138,7 +138,6 @@
                     <button class="btn btn-green" onclick="addOrUpdateConfig()">新增/更新</button>
                     <button class="btn btn-red" onclick="deleteConfigEvent()">刪除項目</button>
                 </div>
-                <p style="font-size:0.8rem; margin-top:5px; color:#666;">* 修改後將即時生效並自動儲存。</p>
             </div>
 
             <div id="squadBoard" class="squad-container"></div>
@@ -162,7 +161,6 @@
 <div id="pickerModal">
     <div class="picker-content">
         <h3 id="pickerTitle">選擇運動員</h3>
-        <p style="font-size:0.8rem; color:red;">* 只會顯示符合組別(含越級)及性別的學生</p>
         <input type="text" id="pickerSearch" placeholder="🔍 搜尋姓名..." oninput="filterPickerList()">
         <div id="pickerList" class="picker-list"></div>
         <div style="display:flex; gap:10px;">
@@ -173,37 +171,24 @@
 </div>
 
 <script>
-// --- 出賽名額初始配置 ---
+// --- 初始化配置 ---
 const DEFAULT_SQUAD_CONFIG = {
-    plk: {
-        A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6},
-        B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6},
-        C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6}
-    },
-    shatin: {
-        A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6},
-        B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"跳高":1,"擲壘球":1,"4x100m":6},
-        C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6}
-    },
-    five: {
-        A: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6},
-        B: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6},
-        C: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6},
-        D: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6}
-    }
+    plk: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
+    shatin: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"跳高":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
+    five: { A: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, B: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, C: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6}, D: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6} }
 };
 
-// --- 數據持久化 ---
 let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v23')) || DEFAULT_SQUAD_CONFIG;
-let students = JSON.parse(localStorage.getItem('ckc_stu_v21')) || []; // 沿用舊學生數據
+let students = JSON.parse(localStorage.getItem('ckc_stu_v21')) || [];
 let records = JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
 let squads = JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
 const events = ["60m", "100m", "200m", "400m", "跳遠", "跳高", "擲壘球", "推鉛球", "4x100m"];
 let activeSlot = null;
+let chartInstance = null;
 
 window.onload = () => {
     document.querySelectorAll('.year-select').forEach(sel => {
-        for(let y=2014; y<=2025; y++) sel.add(new Option(y+" 年", y));
+        for(let y=2014; y<=2026; y++) sel.add(new Option(y+" 年", y));
     });
     document.getElementById('resYear').value = 2015;
     document.getElementById('chartYear').value = 2015;
@@ -222,60 +207,92 @@ function saveAll() {
     localStorage.setItem('ckckt_cfg_v23', JSON.stringify(squadConfig));
 }
 
-// --- 名額編輯邏輯 ---
-function toggleConfigPanel() {
-    const panel = document.getElementById('configPanel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+// --- 數據分析：進步曲線修正邏輯 ---
+function updateAnalysis() {
+    const yr = parseInt(document.getElementById('chartYear').value);
+    const g = document.getElementById('chartGender').value;
+    const ev = document.getElementById('chartEvent').value;
+    const isField = ["跳遠", "跳高", "擲壘球", "推鉛球"].includes(ev);
+
+    // 1. 篩選數據並嚴格按日期排序
+    const filtered = records.filter(r => r.year == yr && r.gender == g && r.event == ev)
+                           .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    // 2. 歷史五強邏輯 (取每人最優)
+    const bests = {};
+    filtered.forEach(r => {
+        if(!bests[r.name] || (isField ? r.val > bests[r.name].val : r.val < bests[r.name].val)) {
+            bests[r.name] = r;
+        }
+    });
+    const top5 = Object.values(bests).sort((a,b) => isField ? b.val - a.val : a.val - b.val).slice(0,5);
+    document.getElementById('top5Area').innerHTML = top5.map((r, i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.val}</td><td>${r.comp}</td><td>${r.date}</td></tr>`).join('');
+
+    // 3. 圖表渲染修正：明確指定排序後的 X 軸標籤
+    const sortedLabels = [...new Set(filtered.map(r => r.date))].sort((a,b) => new Date(a) - new Date(b));
+    
+    const studentData = {};
+    filtered.forEach(r => {
+        if(!studentData[r.name]) studentData[r.name] = [];
+        studentData[r.name].push({ x: r.date, y: r.val });
+    });
+
+    if(chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('compareChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sortedLabels, // 強制使用排序後的時間軸
+            datasets: Object.keys(studentData).map((n, i) => ({
+                label: n,
+                data: studentData[n],
+                borderColor: `hsl(${(i*75)%360}, 70%, 50%)`,
+                backgroundColor: `hsl(${(i*75)%360}, 70%, 50%)`,
+                fill: false,
+                tension: 0.1
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { 
+                    reverse: !isField,
+                    title: { display: true, text: isField ? '米' : '秒' }
+                },
+                x: {
+                    title: { display: true, text: '比賽日期' }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
 }
 
+// --- 排陣管理 ---
+function toggleConfigPanel() { const p = document.getElementById('configPanel'); p.style.display = p.style.display==='none'?'block':'none'; }
 function addOrUpdateConfig() {
-    const comp = document.getElementById('sqComp').value;
-    const gKey = document.getElementById('sqGrade').value.replace('F', '');
-    const evName = document.getElementById('cfgEventName').value.trim();
-    const quota = parseInt(document.getElementById('cfgQuota').value);
-
-    if(!evName || isNaN(quota)) return alert("請輸入項目名稱及名額");
-    
+    const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value.replace('F', '');
+    const evName = document.getElementById('cfgEventName').value.trim(), quota = parseInt(document.getElementById('cfgQuota').value);
+    if(!evName || isNaN(quota)) return alert("請輸入項目及名額");
     if(!squadConfig[comp][gKey]) squadConfig[comp][gKey] = {};
     squadConfig[comp][gKey][evName] = quota;
-    
-    saveAll();
-    renderSquadBoard();
-    alert("設定已更新");
+    saveAll(); renderSquadBoard();
 }
-
 function deleteConfigEvent() {
-    const comp = document.getElementById('sqComp').value;
-    const gKey = document.getElementById('sqGrade').value.replace('F', '');
+    const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value.replace('F', '');
     const evName = document.getElementById('cfgEventName').value.trim();
-
-    if(squadConfig[comp][gKey] && squadConfig[comp][gKey][evName]) {
-        delete squadConfig[comp][gKey][evName];
-        saveAll();
-        renderSquadBoard();
-        alert("項目已刪除");
-    } else {
-        alert("找不到該項目");
-    }
+    if(squadConfig[comp][gKey] && squadConfig[comp][gKey][evName]) { delete squadConfig[comp][gKey][evName]; saveAll(); renderSquadBoard(); }
 }
-
-// --- 排陣管理渲染 ---
 function renderSquadBoard() {
     const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value;
     const gender = gKey.startsWith('F') ? 'F' : 'M', grade = gKey.replace('F', '');
     const board = document.getElementById('squadBoard'); board.innerHTML = "";
-    
-    // 從 squadConfig 讀取設定
     const qSet = (squadConfig[comp] && squadConfig[comp][grade]) ? squadConfig[comp][grade] : {};
-
-    if(Object.keys(qSet).length === 0) {
-        board.innerHTML = "<p style='text-align:center; padding:20px;'>此組別尚未設定項目。請使用「編輯項目」功能新增。</p>";
-        return;
-    }
-
     Object.keys(qSet).forEach(ev => {
-        const count = qSet[ev], key = `${comp}_${gKey}_${ev}`;
-        const names = squads[key] || [];
+        const count = qSet[ev], key = `${comp}_${gKey}_${ev}`, names = squads[key] || [];
         let pills = "";
         for(let i=0; i<count; i++) {
             const n = names[i] || "待選擇";
@@ -285,50 +302,48 @@ function renderSquadBoard() {
     });
 }
 
-// --- 組別邏輯 (不變) ---
-function getGradeByYear(birthYear) {
-    const age = 2026 - birthYear;
-    if (age >= 11) return 'A';
-    if (age === 10) return 'B';
-    if (age === 9) return 'C';
-    return 'D';
+// --- 輔助功能 ---
+function getGradeByYear(y) { const age = 2026 - y; return age >= 11 ? 'A' : age === 10 ? 'B' : age === 9 ? 'C' : 'D'; }
+function canJoin(y, target) { const order = {'D':1,'C':2,'B':3,'A':4}; return order[target] >= order[getGradeByYear(y)]; }
+function openPicker(key, idx, g, tg) { activeSlot = {key, idx, g, tg}; document.getElementById('pickerModal').style.display="flex"; filterPickerList(); }
+function filterPickerList() {
+    const term = document.getElementById('pickerSearch').value.toLowerCase();
+    const list = document.getElementById('pickerList'); list.innerHTML = "";
+    students.filter(s => s.g === activeSlot.g && s.n.toLowerCase().includes(term) && canJoin(s.y, activeSlot.tg))
+            .forEach(s => {
+                const b = document.createElement('button'); b.className="btn btn-dark"; b.style.background="#fff"; b.style.color="#333"; b.style.border="1px solid #ddd";
+                b.innerHTML=`${s.n}<br><small>${s.y}(${getGradeByYear(s.y)})</small>`;
+                b.onclick=() => { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=s.n; saveAll(); renderSquadBoard(); closePicker(); };
+                list.appendChild(b);
+            });
 }
-
-function canStudentJoinGrade(studentYear, targetGrade) {
-    const sGrade = getGradeByYear(studentYear);
-    const order = {'D': 1, 'C': 2, 'B': 3, 'A': 4};
-    return order[targetGrade] >= order[sGrade];
+function selectAthlete(n) { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=n===""?null:n; saveAll(); renderSquadBoard(); closePicker(); }
+function closePicker() { document.getElementById('pickerModal').style.display="none"; }
+function saveRecord() {
+    const id = document.getElementById('editModeId').value;
+    const name = document.getElementById('resName').value, val = parseFloat(document.getElementById('resVal').value);
+    if(!name || isNaN(val)) return alert("請填寫姓名及成績");
+    const data = { id: id?parseFloat(id):Date.now(), comp: document.getElementById('resCompName').value||"日常測試", date: document.getElementById('resDate').value, name, year: parseInt(document.getElementById('resYear').value), gender: document.getElementById('resGender').value, event: document.getElementById('resEvent').value, val, award: document.getElementById('resAward').value };
+    if(id) records[records.findIndex(r=>r.id==id)] = data; else records.unshift(data);
+    saveAll(); renderRecords();
 }
-
-// --- 其餘功能模塊 (維持V21/V22邏輯) ---
-function openPicker(key, index, gender, targetGrade) { activeSlot = { key, index, gender, targetGrade }; document.getElementById('pickerModal').style.display = "flex"; document.getElementById('pickerSearch').value = ""; filterPickerList(); }
-function filterPickerList() { const term = document.getElementById('pickerSearch').value.toLowerCase(); const list = document.getElementById('pickerList'); list.innerHTML = ""; students.filter(s => s.g === activeSlot.gender && s.n.toLowerCase().includes(term) && canStudentJoinGrade(s.y, activeSlot.targetGrade)).sort((a,b)=>b.y-a.y).forEach(s => { const b = document.createElement('button'); b.className="btn btn-dark"; b.style.background="#fff"; b.style.color="#333"; b.style.border="1px solid #ddd"; b.style.height="auto"; b.innerHTML=`${s.n}<br><small>${s.y}(${getGradeByYear(s.y)})</small>`; b.onclick=()=>selectAthlete(s.n); list.appendChild(b); }); }
-function selectAthlete(name) { const { key, index } = activeSlot; if(!squads[key]) squads[key] = []; squads[key][index] = name === "" ? null : name; saveAll(); renderSquadBoard(); closePicker(); }
-function closePicker() { document.getElementById('pickerModal').style.display = "none"; }
-function saveRecord() { const id = document.getElementById('editModeId').value; const name = document.getElementById('resName').value; const val = parseFloat(document.getElementById('resVal').value); if(!name || isNaN(val)) return alert("請填寫姓名及成績"); const data = { id: id ? parseFloat(id) : Date.now(), comp: document.getElementById('resCompName').value || "日常測試", date: document.getElementById('resDate').value, name, year: parseInt(document.getElementById('resYear').value), gender: document.getElementById('resGender').value, event: document.getElementById('resEvent').value, val, award: document.getElementById('resAward').value }; if(id) { records[records.findIndex(r => r.id == id)] = data; cancelEdit(); } else { records.unshift(data); } saveAll(); renderRecords(); }
-function renderRecords() { document.getElementById('recordListArea').innerHTML = records.map(r => `<tr><td>${r.date}</td><td><strong>${r.name}</strong></td><td>${r.event}</td><td>${r.val}</td><td>${r.comp}</td><td><button class="btn btn-blue" onclick="editRecord(${r.id})">編輯</button> <button class="btn btn-red" onclick="deleteRecord(${r.id})">刪除</button></td></tr>`).join(''); }
-function deleteRecord(id) { if(confirm("確定刪除？")) { records = records.filter(r => r.id != id); saveAll(); renderRecords(); } }
-function updateResNames() { const yr = parseInt(document.getElementById('resYear').value), g = document.getElementById('resGender').value; const sel = document.getElementById('resName'); sel.innerHTML = ""; students.filter(s => s.y == yr && s.g == g).forEach(s => sel.add(new Option(s.n, s.n))); }
-function addNewStudent() { const n = document.getElementById('newStuName').value.trim(); const y = parseInt(document.getElementById('newStuYear').value), g = document.getElementById('newStuGender').value; if(n) { students.push({n,y,g}); saveAll(); renderStudentAdmin(); updateResNames(); document.getElementById('newStuName').value=""; } }
+function renderRecords() { document.getElementById('recordListArea').innerHTML = records.map(r=>`<tr><td>${r.date}</td><td><strong>${r.name}</strong></td><td>${r.event}</td><td>${r.val}</td><td>${r.comp}</td><td><button class="btn btn-blue" onclick="editRecord(${r.id})">編輯</button> <button class="btn btn-red" onclick="deleteRecord(${r.id})">刪除</button></td></tr>`).join(''); }
+function deleteRecord(id) { if(confirm("刪除？")){records=records.filter(r=>r.id!=id);saveAll();renderRecords();} }
+function editRecord(id) {
+    const r = records.find(x=>x.id==id);
+    document.getElementById('editModeId').value=r.id; document.getElementById('resCompName').value=r.comp; document.getElementById('resDate').value=r.date;
+    document.getElementById('resYear').value=r.year; document.getElementById('resGender').value=r.gender; updateResNames();
+    document.getElementById('resName').value=r.name; document.getElementById('resEvent').value=r.event; document.getElementById('resVal').value=r.val;
+    document.getElementById('resAward').value=r.award; document.getElementById('cancelBtn').style.display="inline";
+}
+function cancelEdit() { document.getElementById('editModeId').value=""; document.getElementById('editFormSection').querySelectorAll('input').forEach(i=>i.value=""); document.getElementById('cancelBtn').style.display="none"; }
+function updateResNames() { const yr=parseInt(document.getElementById('resYear').value), g=document.getElementById('resGender').value; const sel=document.getElementById('resName'); sel.innerHTML=""; students.filter(s=>s.y==yr && s.g==g).forEach(s=>sel.add(new Option(s.n, s.n))); }
+function addNewStudent() { const n=document.getElementById('newStuName').value.trim(), y=parseInt(document.getElementById('newStuYear').value), g=document.getElementById('newStuGender').value; if(n){students.push({n,y,g});saveAll();renderStudentAdmin();updateResNames();document.getElementById('newStuName').value="";} }
 function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML = students.sort((a,b)=>b.y-a.y).map(s=>`<tr><td>${s.n}</td><td>${s.y}</td><td>${s.g}</td><td>${getGradeByYear(s.y)}</td><td><button onclick="deleteStudent('${s.n}',${s.y})">廢除</button></td></tr>`).join(''); }
-function deleteStudent(n,y) { if(confirm("廢除？")){ students = students.filter(s=>!(s.n==n&&s.y==y)); saveAll(); renderStudentAdmin(); } }
-function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); if(id === 'analysis') setTimeout(updateAnalysis, 100); }
-function exportToExcel() { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), "Students"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(records), "Records"); XLSX.writeFile(wb, `PLKCKT_Data.xlsx`); }
-function importFromExcel(event) { const reader = new FileReader(); reader.onload = (e) => { const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); if(confirm("確定覆蓋數據？")) { if(wb.Sheets["Students"]) students = XLSX.utils.sheet_to_json(wb.Sheets["Students"]); if(wb.Sheets["Records"]) records = XLSX.utils.sheet_to_json(wb.Sheets["Records"]); saveAll(); location.reload(); } }; reader.readAsArrayBuffer(event.target.files[0]); }
-
-let chartInstance = null;
-function updateAnalysis() {
-    const yr = parseInt(document.getElementById('chartYear').value), g = document.getElementById('chartGender').value, ev = document.getElementById('chartEvent').value;
-    const isField = ["跳遠", "跳高", "擲壘球", "推鉛球"].includes(ev);
-    const bests = {};
-    records.filter(r => r.year == yr && r.gender == g && r.event == ev).forEach(r => { if(!bests[r.name] || (isField ? r.val > bests[r.name].val : r.val < bests[r.name].val)) bests[r.name] = r; });
-    const top5 = Object.values(bests).sort((a,b) => isField ? b.val - a.val : a.val - b.val).slice(0,5);
-    document.getElementById('top5Area').innerHTML = top5.map((r, i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.val}</td><td>${r.comp}</td><td>${r.date}</td></tr>`).join('');
-    const filtered = records.filter(r => r.year == yr && r.gender == g && r.event == ev).sort((a,b) => new Date(a.date) - new Date(b.date));
-    const studentData = {}; filtered.forEach(r => { if(!studentData[r.name]) studentData[r.name] = []; studentData[r.name].push({ x: r.date, y: r.val }); });
-    if(chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(document.getElementById('compareChart').getContext('2d'), { type: 'line', data: { datasets: Object.keys(studentData).map((n, i) => ({ label: n, data: studentData[n], borderColor: `hsl(${(i*70)%360},70%,50%)`, fill: false })) }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: !isField } } } });
-}
+function deleteStudent(n,y) { if(confirm("廢除？")){students=students.filter(s=>!(s.n==n&&s.y==y));saveAll();renderStudentAdmin();} }
+function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); if(id==='analysis') setTimeout(updateAnalysis,100); }
+function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V24.xlsx`); }
+function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
 </script>
 </body>
 </html>
