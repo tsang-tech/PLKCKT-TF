@@ -3,131 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLK CKC 體育管理系統 V23</title>
+    <title>PLK CKC 體育管理系統 V22</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --plk-blue: #1a73e8; --plk-red: #ea4335; --plk-green: #27ae60; --plk-gold: #f39c12; --plk-dark: #34495e; }
         body { font-family: "Microsoft JhengHei", sans-serif; max-width: 1300px; margin: 0 auto; padding: 10px; background-color: #f0f2f5; color: #333; }
         .card { background: white; padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        h1 { color: var(--plk-blue); text-align: center; font-size: 1.2rem; margin-bottom: 10px; }
+        h1 { color: var(--plk-blue); text-align: center; font-size: 1.5rem; margin-bottom: 15px; }
         
-        .tabs { display: flex; overflow-x: auto; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #ddd; }
-        .tab-btn { padding: 10px 15px; border: none; border-radius: 8px 8px 0 0; cursor: pointer; background: #eee; font-weight: bold; white-space: nowrap; font-size: 0.9rem; }
+        .tabs { display: flex; overflow-x: auto; gap: 5px; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid #ddd; }
+        .tab-btn { padding: 10px 20px; border: none; border-radius: 10px 10px 0 0; cursor: pointer; background: #eee; font-weight: bold; white-space: nowrap; transition: 0.3s; }
         .tab-btn.active { background: var(--plk-blue); color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
         select, input { padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: 100%; font-size: 1rem; box-sizing: border-box; }
-        .btn { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
+        .btn { padding: 10px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.9rem; }
         .btn-blue { background: var(--plk-blue); color: white; }
         .btn-green { background: var(--plk-green); color: white; }
         .btn-red { background: var(--plk-red); color: white; }
+        .btn-orange { background: var(--plk-gold); color: white; }
+        .btn-dark { background: var(--plk-dark); color: white; }
 
-        /* 排陣卡片 */
-        .squad-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
-        .event-slot-card { border-left: 5px solid var(--plk-blue); background: #f9f9f9; padding: 12px; border-radius: 8px; }
-        .slot-title { font-weight: bold; color: var(--plk-dark); display: block; margin-bottom: 5px;}
-        .slot-pill { display: inline-block; background: #fff; border: 1px dashed #aaa; padding: 8px 12px; margin: 4px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; min-width: 60px; text-align: center; }
+        .table-wrapper { max-height: 450px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 0.9rem; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #f4f7f6; position: sticky; top: 0; z-index: 10; }
+
+        .squad-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 15px; }
+        .event-slot-card { border-left: 5px solid var(--plk-blue); background: #f9f9f9; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .slot-title { font-weight: bold; margin-bottom: 8px; color: var(--plk-dark); display: block; }
+        .slot-pill { display: inline-block; background: #fff; border: 1px dashed #aaa; padding: 6px 12px; margin: 4px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .slot-pill:hover { border-color: var(--plk-blue); background: #f0f7ff; }
         .slot-filled { border-style: solid; background: #e8f0fe; color: #1967d2; border-color: var(--plk-blue); font-weight: bold; }
 
-        /* 彈窗 */
-        #pickerModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center; }
-        .picker-content { background:white; width:95%; max-width:500px; padding:20px; border-radius:15px; max-height:90vh; display:flex; flex-direction:column; }
-        .picker-list { overflow-y:auto; flex-grow:1; margin:15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stu-item { padding: 12px; border: 1px solid #ddd; border-radius: 8px; text-align: left; background: #fff; cursor: pointer;}
-        .stu-tag { font-size: 0.7rem; background: #eee; padding: 2px 5px; border-radius: 4px; color: #666; }
+        #pickerModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; }
+        .picker-content { background:white; width:90%; max-width:450px; padding:20px; border-radius:15px; max-height:80vh; display:flex; flex-direction:column; }
+        .picker-list { overflow-y:auto; flex-grow:1; margin:15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-        @media print { .no-print { display: none !important; } }
+        @media print { .no-print { display: none !important; } table { border: 1px solid #000; } }
     </style>
 </head>
 <body>
 
 <div class="no-print">
-    <h1>PLK CKC 體育管理 V23 (智慧組別版)</h1>
+    <h1>PLK CKC 體育管理系統 V22</h1>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('squad')">🏃 排陣管理</button>
-        <button class="tab-btn" onclick="switchTab('results')">📝 成績錄入</button>
-        <button class="tab-btn" onclick="switchTab('students')">👥 名單管理</button>
+        <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
+        <button class="tab-btn" onclick="switchTab('analysis')">📈 數據分析</button>
+        <button class="tab-btn" onclick="switchTab('squad')">🏃 排陣管理</button>
+        <button class="tab-btn" onclick="switchTab('students')">👥 學生名單</button>
     </div>
 
-    <div id="squad" class="tab-content active">
-        <div class="card">
+    <div id="results" class="tab-content active">
+        <div class="card" id="editFormSection">
+            <h3 id="formTitle">📍 錄入新成績</h3>
+            <input type="hidden" id="editModeId" value="">
             <div class="grid">
-                <select id="sqComp" onchange="renderSquadBoard()">
-                    <option value="plk">（保良局）全港屬下小學賽</option>
-                    <option value="shatin">（學界）沙田小學校際賽</option>
-                    <option value="five">（五校）沙田區屬下小學賽</option>
-                </select>
-                <select id="sqGrade" onchange="renderSquadBoard()">
-                    <option value="A">男甲</option><option value="FA">女甲</option>
-                    <option value="B">男乙</option><option value="FB">女乙</option>
-                    <option value="C">男丙</option><option value="FC">女丙</option>
-                    <option value="D">男丁</option><option value="FD">女丁</option>
-                </select>
-            </div>
-            <p id="gradeNote" style="font-size: 0.8rem; color: #666; margin-top: 5px;"></p>
-            <div id="squadBoard" class="squad-container" style="margin-top:15px;"></div>
-        </div>
-    </div>
-
-    <div id="results" class="tab-content">
-        <div class="card">
-            <h3 id="formTitle" style="margin-top:0">📍 錄入成績</h3>
-            <div class="grid">
+                <input type="text" id="resCompName" placeholder="比賽名稱">
+                <input type="date" id="resDate">
                 <select id="resYear" class="year-select" onchange="updateResNames()"></select>
-                <select id="resGender" onchange="updateResNames()"><option value="M">男</option><option value="F">女</option></select>
+                <select id="resGender" onchange="updateResNames()"><option value="M">男 (M)</option><option value="F">女 (F)</option></select>
                 <select id="resName"></select>
+            </div>
+            <div class="grid" style="margin-top:10px;">
                 <select id="resEvent"></select>
-                <input type="number" id="resVal" step="0.01" placeholder="成績">
-                <button class="btn btn-blue" onclick="saveRecord()">儲存</button>
+                <input type="number" id="resVal" step="0.01" placeholder="成績 (秒/米)">
+                <input type="text" id="resAward" placeholder="備註">
+                <button id="saveBtn" class="btn btn-blue" onclick="saveRecord()">💾 儲存數據</button>
+                <button id="cancelBtn" class="btn btn-dark" style="display:none;" onclick="cancelEdit()">取消修改</button>
             </div>
         </div>
         <div class="card">
-            <div class="table-wrapper" style="overflow-x:auto">
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead><tr style="background:#eee"><th>姓名</th><th>項目</th><th>成績</th><th>操作</th></tr></thead>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>📜 歷史紀錄</h3>
+                <div>
+                    <button class="btn btn-green" onclick="exportToExcel()" style="padding:5px 10px;">📤 匯出 Excel</button>
+                    <button class="btn btn-dark" onclick="document.getElementById('importFile').click()" style="padding:5px 10px;">📥 匯入</button>
+                    <input type="file" id="importFile" style="display:none" accept=".xlsx" onchange="importFromExcel(event)">
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>日期</th><th>姓名</th><th>項目</th><th>成績</th><th>比賽</th><th>操作</th></tr></thead>
                     <tbody id="recordListArea"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    <div id="analysis" class="tab-content">
+        <div class="card">
+            <div class="grid">
+                <select id="chartYear" class="year-select" onchange="updateAnalysis()"></select>
+                <select id="chartGender" onchange="updateAnalysis()"><option value="M">男</option><option value="F">女</option></select>
+                <select id="chartEvent" onchange="updateAnalysis()"></select>
+            </div>
+            <div style="height:350px; margin-top:15px;"><canvas id="compareChart"></canvas></div>
+        </div>
+        <div class="card top5-badge">
+            <h3 style="margin-top:0; color: var(--plk-gold);">🏆 項目歷史五強</h3>
+            <table id="top5Table"><thead><tr><th>排名</th><th>姓名</th><th>成績</th><th>比賽</th><th>日期</th></tr></thead><tbody id="top5Area"></tbody></table>
+        </div>
+    </div>
+
+    <div id="squad" class="tab-content">
+        <div class="card">
+            <div class="grid">
+                <select id="sqComp" onchange="renderSquadBoard()">
+                    <option value="plk">（保良局）全港小學賽</option>
+                    <option value="shatin">（學界）沙田小學賽</option>
+                    <option value="five">（五校）沙田屬下小學賽</option>
+                </select>
+                <select id="sqGrade" onchange="renderSquadBoard()">
+                    <option value="A">男甲</option><option value="FA">女甲</option>
+                    <option value="B">男乙</option><option value="FB">女乙</option>
+                    <option value="C">男丙</option><option value="FC">女丙</option>
+                    <option value="D">男丁 (五校)</option><option value="FD">女丁 (五校)</option>
+                </select>
+                <button class="btn btn-dark" onclick="window.print()">🖨️ 列印名單</button>
+            </div>
+            <div id="squadBoard" class="squad-container"></div>
+        </div>
+    </div>
+
     <div id="students" class="tab-content">
         <div class="card">
-            <h3>👥 隊員列表</h3>
+            <h3>👥 隊員增刪</h3>
             <div class="grid">
                 <input type="text" id="newStuName" placeholder="姓名">
                 <select id="newStuYear" class="year-select"></select>
                 <select id="newStuGender"><option value="M">男</option><option value="F">女</option></select>
-                <button class="btn btn-green" onclick="addNewStudent()">加入</button>
+                <button class="btn btn-green" onclick="addNewStudent()">➕ 加入名單</button>
             </div>
-            <div style="margin-top:15px; display:flex; gap:10px;">
-                <button class="btn btn-blue" onclick="exportToExcel()">匯出 Excel</button>
-                <button class="btn btn-red" onclick="resetSystem()">清空重置</button>
-            </div>
+            <div class="table-wrapper"><table><thead><tr><th>姓名</th><th>出生年份</th><th>性別</th><th>目前組別</th><th>操作</th></tr></thead><tbody id="stuListArea"></tbody></table></div>
         </div>
     </div>
 </div>
 
 <div id="pickerModal">
     <div class="picker-content">
-        <h3 id="pickerTitle" style="margin:0">選擇運動員</h3>
-        <p style="font-size:0.8rem; color:var(--plk-red);">* 僅顯示符合性別及越級規則的學生</p>
-        <input type="text" id="pickerSearch" placeholder="🔍 搜尋姓名..." oninput="filterPickerList()" style="margin:10px 0;">
+        <h3 id="pickerTitle">選擇運動員</h3>
+        <p style="font-size:0.8rem; color:red;">* 只會顯示符合組別(含越級)及性別的學生</p>
+        <input type="text" id="pickerSearch" placeholder="🔍 搜尋姓名..." oninput="filterPickerList()">
         <div id="pickerList" class="picker-list"></div>
         <div style="display:flex; gap:10px;">
             <button class="btn btn-red" style="flex:1" onclick="selectAthlete('')">❌ 清除位置</button>
-            <button class="btn btn-blue" style="flex:1" onclick="closePicker()">關閉</button>
+            <button class="btn btn-dark" style="flex:1" onclick="closePicker()">關閉</button>
         </div>
     </div>
 </div>
 
 <script>
-// --- 核心配置 ---
-const SQUAD_QUOTAS = {
+// --- 出賽名額配置 ---
+const SQUAD_CONFIG = {
     plk: {
         A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6},
         B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6},
@@ -146,6 +178,24 @@ const SQUAD_QUOTAS = {
     }
 };
 
+// --- 組別邏輯函式 ---
+function getGradeByYear(birthYear) {
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - birthYear;
+    if (age >= 11) return 'A'; // 2015 -> 2026 = 11歲 (甲)
+    if (age === 10) return 'B'; // 2016 -> 2026 = 10歲 (乙)
+    if (age === 9) return 'C';  // 2017 -> 2026 = 9歲 (丙)
+    return 'D';                // 2018 or after = 丁
+}
+
+function canStudentJoinGrade(studentYear, targetGrade) {
+    const sGrade = getGradeByYear(studentYear);
+    const order = {'D': 1, 'C': 2, 'B': 3, 'A': 4};
+    // 丁(1)可打 1,2,3,4 | 丙(2)可打 2,3,4 | 乙(3)可打 3,4 | 甲(4)僅可打 4
+    return order[targetGrade] >= order[sGrade];
+}
+
+// --- 數據與初始化 ---
 const CORE_STUDENTS = [
     {n:"朱政熙",y:2015,g:"M"},{n:"陳浩霆",y:2015,g:"M"},{n:"黃樂童",y:2015,g:"M"},{n:"林俊宇",y:2015,g:"M"},{n:"鄭悅朗",y:2015,g:"M"},{n:"梁匡茗",y:2015,g:"M"},{n:"劉凱諾",y:2015,g:"M"},{n:"陳楷洋",y:2015,g:"M"},{n:"鍾政言",y:2015,g:"M"},{n:"李泓正",y:2015,g:"M"},{n:"張焯珽",y:2015,g:"M"},{n:"黃日希",y:2015,g:"M"},
     {n:"黃子晴",y:2015,g:"F"},{n:"羅文君",y:2015,g:"F"},{n:"譚念珈",y:2015,g:"F"},{n:"許芯語",y:2015,g:"F"},{n:"施驊倩",y:2015,g:"F"},{n:"黃鈺瞳",y:2015,g:"F"},{n:"曾釨渘",y:2015,g:"F"},{n:"王恩烯",y:2015,g:"F"},{n:"彭乙晴",y:2015,g:"F"},{n:"顏卡蜜拉",y:2015,g:"F"},
@@ -157,64 +207,64 @@ const CORE_STUDENTS = [
     {n:"周暟淳",y:2018,g:"F"},{n:"陳希兒",y:2018,g:"F"},{n:"鄧善殷",y:2018,g:"F"},{n:"李晉兒",y:2018,g:"F"},{n:"鄧雅殷",y:2018,g:"F"},{n:"雪壬愷",y:2018,g:"F"},{n:"邱曼露",y:2018,g:"F"},{n:"李心妤",y:2018,g:"F"},{n:"李梓雯",y:2018,g:"F"},{n:"張善愉",y:2018,g:"F"},{n:"麥稀澄",y:2018,g:"F"},{n:"童文涵",y:2018,g:"F"},{n:"林靖柔",y:2018,g:"F"}
 ];
 
-let students = JSON.parse(localStorage.getItem('ckc_stu_v23')) || CORE_STUDENTS;
-let records = JSON.parse(localStorage.getItem('ckc_rec_v23')) || [];
-let squads = JSON.parse(localStorage.getItem('ckc_sq_v23')) || {};
+let students = JSON.parse(localStorage.getItem('ckc_stu_v22')) || CORE_STUDENTS;
+let records = JSON.parse(localStorage.getItem('ckc_rec_v22')) || [];
+let squads = JSON.parse(localStorage.getItem('ckc_sq_v22')) || {};
 const events = ["60m", "100m", "200m", "400m", "跳遠", "跳高", "擲壘球", "推鉛球", "4x100m"];
 let activeSlot = null;
 
-// --- 智慧組別計算邏輯 ---
-function getStudentGrade(birthYear) {
-    const currentYear = new Date().getFullYear();
-    const diff = currentYear - birthYear;
-    // 2026年為例: 2015年生(11歲)=甲, 2016(10歲)=乙, 2017(9歲)=丙, 2018+(8歲或以下)=丁
-    if (diff >= 11) return 'A';
-    if (diff === 10) return 'B';
-    if (diff === 9) return 'C';
-    return 'D';
-}
-
-function canCompete(studentYear, targetGrade) {
-    const sGrade = getStudentGrade(studentYear);
-    const gradeOrder = { 'D': 1, 'C': 2, 'B': 3, 'A': 4 };
-    // 丁組(1)可以參加 A,B,C,D (4,3,2,1)
-    // 丙組(2)可以參加 A,B,C (4,3,2)
-    // 乙組(3)可以參加 A,B (4,3)
-    // 甲組(4)只能參加 A (4)
-    return gradeOrder[targetGrade] >= gradeOrder[sGrade];
-}
-
-// --- 初始化 ---
 window.onload = () => {
     document.querySelectorAll('.year-select').forEach(sel => {
         for(let y=2014; y<=2025; y++) sel.add(new Option(y+" 年", y));
     });
     document.getElementById('resYear').value = 2015;
-    events.forEach(e => document.getElementById('resEvent').add(new Option(e, e)));
-    renderSquadBoard();
-    renderRecords();
+    document.getElementById('chartYear').value = 2015;
+    document.getElementById('resDate').valueAsDate = new Date();
+    ['resEvent', 'chartEvent'].forEach(id => {
+        events.forEach(e => document.getElementById(id).add(new Option(e, e)));
+    });
+    refreshUI();
 };
 
-// --- 排陣管理 ---
+function refreshUI() { updateResNames(); renderRecords(); renderStudentAdmin(); renderSquadBoard(); }
+function saveAll() {
+    localStorage.setItem('ckc_stu_v22', JSON.stringify(students));
+    localStorage.setItem('ckc_rec_v22', JSON.stringify(records));
+    localStorage.setItem('ckc_sq_v22', JSON.stringify(squads));
+}
+
+// --- 成績/編輯相關 (維持V21邏輯) ---
+function saveRecord() {
+    const id = document.getElementById('editModeId').value;
+    const name = document.getElementById('resName').value;
+    const val = parseFloat(document.getElementById('resVal').value);
+    if(!name || isNaN(val)) return alert("請填寫姓名及成績");
+    const data = { id: id ? parseFloat(id) : Date.now(), comp: document.getElementById('resCompName').value || "日常測試", date: document.getElementById('resDate').value, name, year: parseInt(document.getElementById('resYear').value), gender: document.getElementById('resGender').value, event: document.getElementById('resEvent').value, val, award: document.getElementById('resAward').value };
+    if(id) { records[records.findIndex(r => r.id == id)] = data; cancelEdit(); } else { records.unshift(data); }
+    saveAll(); renderRecords();
+}
+function renderRecords() { document.getElementById('recordListArea').innerHTML = records.map(r => `<tr><td>${r.date}</td><td><strong>${r.name}</strong></td><td>${r.event}</td><td>${r.val}</td><td>${r.comp}</td><td><button class="btn btn-blue" style="padding:4px 8px;" onclick="editRecord(${r.id})">編輯</button> <button class="btn btn-red" style="padding:4px 8px;" onclick="deleteRecord(${r.id})">刪除</button></td></tr>`).join(''); }
+function editRecord(id) { const r = records.find(rec => rec.id == id); document.getElementById('editModeId').value = r.id; document.getElementById('resCompName').value = r.comp; document.getElementById('resDate').value = r.date; document.getElementById('resYear').value = r.year; document.getElementById('resGender').value = r.gender; updateResNames(); document.getElementById('resName').value = r.name; document.getElementById('resEvent').value = r.event; document.getElementById('resVal').value = r.val; document.getElementById('resAward').value = r.award; document.getElementById('formTitle').innerText = "✏️ 正在修改數據..."; document.getElementById('saveBtn').innerText = "✅ 更新數據"; document.getElementById('saveBtn').className = "btn btn-orange"; document.getElementById('cancelBtn').style.display = "inline-flex"; window.scrollTo(0, 0); }
+function cancelEdit() { document.getElementById('editModeId').value = ""; document.getElementById('formTitle').innerText = "📍 錄入新成績"; document.getElementById('saveBtn').innerText = "💾 儲存數據"; document.getElementById('saveBtn').className = "btn btn-blue"; document.getElementById('cancelBtn').style.display = "none"; document.getElementById('resVal').value = ""; }
+function deleteRecord(id) { if(confirm("確定刪除？")) { records = records.filter(r => r.id != id); saveAll(); renderRecords(); } }
+function updateResNames() { const yr = parseInt(document.getElementById('resYear').value), g = document.getElementById('resGender').value; const sel = document.getElementById('resName'); sel.innerHTML = ""; students.filter(s => s.y == yr && s.g == g).forEach(s => sel.add(new Option(s.n, s.n))); }
+
+// --- 排陣管理 (重點修改處) ---
 function renderSquadBoard() {
     const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value;
     const gender = gKey.startsWith('F') ? 'F' : 'M', grade = gKey.replace('F', '');
     const board = document.getElementById('squadBoard'); board.innerHTML = "";
     
-    // 更新提示
-    const currentYear = new Date().getFullYear();
-    const birthMap = { 'A': currentYear-11, 'B': currentYear-10, 'C': currentYear-9, 'D': `${currentYear-8}或之後` };
-    document.getElementById('gradeNote').innerText = `目前年度：${currentYear} | 正線生出生年份：${birthMap[grade]}`;
-
-    let qSet = JSON.parse(JSON.stringify(SQUAD_QUOTAS[comp][grade] || {}));
+    // 獲取名額設定
+    const qSet = SQUAD_CONFIG[comp][grade] || {};
     
-    // 五校女乙/甲 特殊修正 (根據老師名單)
-    if(comp === 'five' && gender === 'F' && grade === 'B') {
-        if(qSet["推鉛球"]) { qSet["擲壘球"] = qSet["推鉛球"]; delete qSet["推鉛球"]; }
+    // 特別處理：五校女乙的名額規則（女子乙組 擲壘球 2個, 不設推鉛球）
+    if(comp === 'five' && gender === 'F' && grade === 'B'){
+        delete qSet["推鉛球"]; qSet["擲壘球"] = 2;
     }
 
     if(Object.keys(qSet).length === 0) {
-        board.innerHTML = "<p style='text-align:center; color:#999;'>此比賽無此組別。</p>";
+        board.innerHTML = "<p style='text-align:center; padding:20px;'>此比賽類別無此組別設定。</p>";
         return;
     }
 
@@ -233,6 +283,7 @@ function renderSquadBoard() {
 function openPicker(key, index, gender, targetGrade) {
     activeSlot = { key, index, gender, targetGrade };
     document.getElementById('pickerModal').style.display = "flex";
+    document.getElementById('pickerSearch').value = "";
     filterPickerList();
 }
 
@@ -243,62 +294,50 @@ function filterPickerList() {
     students.filter(s => {
         const matchGender = s.g === activeSlot.gender;
         const matchSearch = s.n.toLowerCase().includes(term);
-        const matchRule = canCompete(s.y, activeSlot.targetGrade);
+        const matchRule = canStudentJoinGrade(s.y, activeSlot.targetGrade);
         return matchGender && matchSearch && matchRule;
-    }).forEach(s => {
-        const div = document.createElement('div');
-        div.className = "stu-item";
-        const sGrade = getStudentGrade(s.y);
-        div.innerHTML = `<strong>${s.n}</strong> <span class="stu-tag">${s.y} (${sGrade}組生)</span>`;
-        div.onclick = () => selectAthlete(s.n);
-        list.appendChild(div);
+    }).sort((a,b) => b.y - a.y).forEach(s => {
+        const b = document.createElement('button');
+        b.className = "btn btn-dark";
+        b.style.background = "#fff"; b.style.color = "#333"; b.style.border = "1px solid #ddd";
+        b.style.display = "flex"; b.style.flexDirection = "column"; b.style.height = "auto";
+        b.innerHTML = `<span>${s.n}</span><small style="color:#666">${s.y} (${getGradeByYear(s.y)}組)</small>`;
+        b.onclick = () => selectAthlete(s.n);
+        list.appendChild(b);
     });
 }
 
 function selectAthlete(name) {
     const { key, index } = activeSlot;
     if(!squads[key]) squads[key] = [];
-    squads[key][index] = name || null;
+    if(name === "") squads[key][index] = null;
+    else squads[key][index] = name;
     saveAll(); renderSquadBoard(); closePicker();
 }
 
 function closePicker() { document.getElementById('pickerModal').style.display = "none"; }
 
-// --- 其他功能 ---
-function saveAll() {
-    localStorage.setItem('ckc_stu_v23', JSON.stringify(students));
-    localStorage.setItem('ckc_rec_v23', JSON.stringify(records));
-    localStorage.setItem('ckc_sq_v23', JSON.stringify(squads));
+// --- Excel / 學生 / 分析 邏輯 ---
+function exportToExcel() { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), "Students"); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(records), "Records"); XLSX.writeFile(wb, `PLK_CKC_Data_V22.xlsx`); }
+function importFromExcel(event) { const reader = new FileReader(); reader.onload = (e) => { const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); if(confirm("確定覆蓋數據？")) { if(wb.Sheets["Students"]) students = XLSX.utils.sheet_to_json(wb.Sheets["Students"]); if(wb.Sheets["Records"]) records = XLSX.utils.sheet_to_json(wb.Sheets["Records"]); saveAll(); location.reload(); } }; reader.readAsArrayBuffer(event.target.files[0]); }
+function addNewStudent() { const n = document.getElementById('newStuName').value.trim(); const y = parseInt(document.getElementById('newStuYear').value), g = document.getElementById('newStuGender').value; if(n) { students.push({n,y,g}); saveAll(); renderStudentAdmin(); updateResNames(); document.getElementById('newStuName').value=""; } }
+function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML = students.sort((a,b)=>b.y-a.y).map(s=>`<tr><td>${s.n}</td><td>${s.y}</td><td>${s.g}</td><td>${getGradeByYear(s.y)}</td><td><button onclick="deleteStudent('${s.n}',${s.y})">廢除</button></td></tr>`).join(''); }
+function deleteStudent(n,y) { if(confirm("廢除？")){ students = students.filter(s=>!(s.n==n&&s.y==y)); saveAll(); renderStudentAdmin(); } }
+function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget.classList.add('active'); if(id === 'analysis') setTimeout(updateAnalysis, 100); }
+
+let chartInstance = null;
+function updateAnalysis() {
+    const yr = parseInt(document.getElementById('chartYear').value), g = document.getElementById('chartGender').value, ev = document.getElementById('chartEvent').value;
+    const isField = ["跳遠", "跳高", "擲壘球", "推鉛球"].includes(ev);
+    const bests = {};
+    records.filter(r => r.year == yr && r.gender == g && r.event == ev).forEach(r => { if(!bests[r.name] || (isField ? r.val > bests[r.name].val : r.val < bests[r.name].val)) bests[r.name] = r; });
+    const top5 = Object.values(bests).sort((a,b) => isField ? b.val - a.val : a.val - b.val).slice(0,5);
+    document.getElementById('top5Area').innerHTML = top5.map((r, i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.val}</td><td>${r.comp}</td><td>${r.date}</td></tr>`).join('');
+    const filtered = records.filter(r => r.year == yr && r.gender == g && r.event == ev).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const studentData = {}; filtered.forEach(r => { if(!studentData[r.name]) studentData[r.name] = []; studentData[r.name].push({ x: r.date, y: r.val }); });
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(document.getElementById('compareChart').getContext('2d'), { type: 'line', data: { datasets: Object.keys(studentData).map((n, i) => ({ label: n, data: studentData[n], borderColor: `hsl(${(i*70)%360},70%,50%)`, fill: false })) }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: !isField } } } });
 }
-function saveRecord() {
-    const n = document.getElementById('resName').value, v = document.getElementById('resVal').value;
-    if(!n || !v) return alert("資料不全");
-    records.unshift({ id:Date.now(), name:n, event:document.getElementById('resEvent').value, val:v, date:new Date().toLocaleDateString() });
-    saveAll(); renderRecords();
-}
-function renderRecords() {
-    document.getElementById('recordListArea').innerHTML = records.slice(0,10).map(r=>`<tr><td>${r.name}</td><td>${r.event}</td><td>${r.val}</td><td><button onclick="delRec(${r.id})">刪</button></td></tr>`).join('');
-}
-function delRec(id) { records = records.filter(r=>r.id!==id); saveAll(); renderRecords(); }
-function updateResNames() {
-    const y = parseInt(document.getElementById('resYear').value), g = document.getElementById('resGender').value;
-    const sel = document.getElementById('resName'); sel.innerHTML = "";
-    students.filter(s=>s.y==y && s.g==g).forEach(s=>sel.add(new Option(s.n, s.n)));
-}
-function addNewStudent() {
-    const n = document.getElementById('newStuName').value;
-    if(!n) return;
-    students.push({n, y:parseInt(document.getElementById('newStuYear').value), g:document.getElementById('newStuGender').value});
-    saveAll(); alert("已加入");
-}
-function switchTab(id) {
-    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    event.currentTarget.classList.add('active');
-}
-function resetSystem() { if(confirm("確定清空所有排陣與成績？")) { localStorage.clear(); location.reload(); } }
-function exportToExcel() { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(records), "Records"); XLSX.writeFile(wb, "CKC_Backup.xlsx"); }
 </script>
 </body>
 </html>
