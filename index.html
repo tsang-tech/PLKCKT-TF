@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V25</title>
+    <title>PLKCKT 田徑隊管理系統 V26</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -37,6 +37,7 @@
         .event-slot-card { border-left: 5px solid var(--plk-blue); background: #f9f9f9; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .slot-title { font-weight: bold; margin-bottom: 8px; color: var(--plk-dark); display: block; }
         .slot-pill { display: inline-block; background: #fff; border: 1px dashed #aaa; padding: 6px 12px; margin: 4px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .slot-pill:hover { border-color: var(--plk-blue); background: #f0f7ff; }
         .slot-filled { border-style: solid; background: #e8f0fe; color: #1967d2; border-color: var(--plk-blue); font-weight: bold; }
 
         .config-panel { background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffe0b2; }
@@ -50,7 +51,7 @@
 <body>
 
 <div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V25</h1>
+    <h1>PLKCKT 田徑隊管理系統 V26</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
@@ -102,8 +103,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <h3>🏆 歷屆各項前八名參考數據</h3>
                 <div>
-                    <button class="btn btn-orange" onclick="document.getElementById('importHistoryFile').click()">📥 匯入歷屆數據</button>
-                    <input type="file" id="importHistoryFile" style="display:none" accept=".xlsx,.csv" onchange="importHistoryExcel(event)">
+                    <button class="btn btn-orange" onclick="document.getElementById('importHistoryFile').click()">📥 批量匯入歷屆數據 (Excel/CSV)</button>
+                    <input type="file" id="importHistoryFile" style="display:none" accept=".xlsx,.csv" multiple onchange="importHistoryExcel(event)">
                     <button class="btn btn-red" onclick="clearHistory()">🗑️ 清空歷屆數據</button>
                 </div>
             </div>
@@ -152,7 +153,7 @@
                     <option value="A">男甲</option><option value="FA">女甲</option>
                     <option value="B">男乙</option><option value="FB">女乙</option>
                     <option value="C">男丙</option><option value="FC">女丙</option>
-                    <option value="D">男丁</option><option value="FD">女丁</option>
+                    <option value="D">男丁 (五校)</option><option value="FD">女丁 (五校)</option>
                 </select>
                 <button class="btn btn-orange" onclick="toggleConfigPanel()">⚙️ 編輯項目與名額</button>
                 <button class="btn btn-dark" onclick="window.print()">🖨️ 列印名單</button>
@@ -197,16 +198,32 @@
 </div>
 
 <script>
-// --- 核心數據儲存 ---
-let students = JSON.parse(localStorage.getItem('ckc_stu_v21')) || [];
-let records = JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
-let squads = JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
-let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v23')) || {
+// --- 核心學生名單 (102名永久保留) ---
+const CORE_STUDENTS = [
+    {n:"朱政熙",y:2015,g:"M"},{n:"陳浩霆",y:2015,g:"M"},{n:"黃樂童",y:2015,g:"M"},{n:"林俊宇",y:2015,g:"M"},{n:"鄭悅朗",y:2015,g:"M"},{n:"梁匡茗",y:2015,g:"M"},{n:"劉凱諾",y:2015,g:"M"},{n:"陳楷洋",y:2015,g:"M"},{n:"鍾政言",y:2015,g:"M"},{n:"李泓正",y:2015,g:"M"},{n:"張焯珽",y:2015,g:"M"},{n:"黃日希",y:2015,g:"M"},
+    {n:"黃子晴",y:2015,g:"F"},{n:"羅文君",y:2015,g:"F"},{n:"譚念珈",y:2015,g:"F"},{n:"許芯語",y:2015,g:"F"},{n:"施驊倩",y:2015,g:"F"},{n:"黃鈺瞳",y:2015,g:"F"},{n:"曾釨渘",y:2015,g:"F"},{n:"王恩烯",y:2015,g:"F"},{n:"彭乙晴",y:2015,g:"F"},{n:"顏卡蜜拉",y:2015,g:"F"},
+    {n:"沈卓諾",y:2016,g:"M"},{n:"邱梓傑",y:2016,g:"M"},{n:"劉緻彥",y:2016,g:"M"},{n:"李宇澤",y:2016,g:"M"},{n:"黃柏禧",y:2016,g:"M"},{n:"陳灝軒",y:2016,g:"M"},{n:"黃梓澧",y:2016,g:"M"},{n:"岳青辰",y:2016,g:"M"},{n:"周駿熹",y:2016,g:"M"},{n:"劉君浩",y:2016,g:"M"},{n:"梁宇翹",y:2016,g:"M"},{n:"黃梓浩",y:2016,g:"M"},
+    {n:"朱兆然",y:2016,g:"F"},{n:"張穎忻",y:2016,g:"F"},{n:"陳曉澄",y:2016,g:"F"},{n:"伍熹榆",y:2016,g:"F"},{n:"黃藝之",y:2016,g:"F"},{n:"高梓翹",y:2016,g:"F"},{n:"薛雨菲",y:2016,g:"F"},{n:"葉希嵐",y:2016,g:"F"},{n:"張懷瑾",y:2016,g:"F"},{n:"張懷蔚",y:2016,g:"F"},{n:"楊倬欣",y:2016,g:"F"},{n:"陳詩晴",y:2016,g:"F"},{n:"丘倩柔",y:2016,g:"F"},
+    {n:"羅啟鋒",y:2017,g:"M"},{n:"梁匡毅",y:2017,g:"M"},{n:"郭俊希",y:2017,g:"M"},{n:"盧鍵霆",y:2017,g:"M"},{n:"江柏昊",y:2017,g:"M"},{n:"鄧萃藍",y:2017,g:"M"},{n:"黃星澧",y:2017,g:"M"},{n:"彭子恪",y:2017,g:"M"},{n:"余卓謙",y:2017,g:"M"},{n:"劉栢熹",y:2017,g:"M"},{n:"胡梓賢",y:2017,g:"M"},{n:"麥風",y:2017,g:"M"},{n:"楊少琪",y:2017,g:"M"},{n:"徐梓程",y:2017,g:"M"},{n:"余焌達",y:2017,g:"M"},
+    {n:"陳諾彤",y:2017,g:"F"},{n:"李思穎",y:2017,g:"F"},{n:"袁煜婷",y:2017,g:"F"},{n:"陳浠庭",y:2017,g:"F"},{n:"曾涴嘉",y:2017,g:"F"},{n:"陳迦琳",y:2017,g:"F"},{n:"焦梓涵",y:2017,g:"F"},{n:"鄧芓游",y:2017,g:"F"},{n:"蔡蔚言",y:2017,g:"F"},{n:"方一心",y:2017,g:"F"},{n:"儲思佳",y:2017,g:"F"},{n:"徐梓瑤",y:2017,g:"F"},{n:"陳希妍",y:2017,g:"F"},
+    {n:"謝瀚陞",y:2018,g:"M"},{n:"胡仲希",y:2018,g:"M"},{n:"黃語浚",y:2018,g:"M"},{n:"梁喬珀",y:2018,g:"M"},{n:"鄔嘉樂",y:2018,g:"M"},{n:"林建宇",y:2018,g:"M"},{n:"李泓亮",y:2018,g:"M"},{n:"廖柏希",y:2018,g:"M"},{n:"伍梓灝",y:2018,g:"M"},{n:"陳境逸",y:2018,g:"M"},{n:"李天仁",y:2018,g:"M"},{n:"黃洛鋋",y:2018,g:"M"},{n:"杜濼麒",y:2018,g:"M"},{n:"李宇軒",y:2018,g:"M"},
+    {n:"周暟淳",y:2018,g:"F"},{n:"陳希兒",y:2018,g:"F"},{n:"鄧善殷",y:2018,g:"F"},{n:"李晉兒",y:2018,g:"F"},{n:"鄧雅殷",y:2018,g:"F"},{n:"雪壬愷",y:2018,g:"F"},{n:"邱曼露",y:2018,g:"F"},{n:"李心妤",y:2018,g:"F"},{n:"李梓雯",y:2018,g:"F"},{n:"張善愉",y:2018,g:"F"},{n:"麥稀澄",y:2018,g:"F"},{n:"童文涵",y:2018,g:"F"},{n:"林靖柔",y:2018,g:"F"}
+];
+
+const DEFAULT_SQUAD_CONFIG = {
     plk: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
     shatin: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"跳高":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
     five: { A: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, B: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, C: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6}, D: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6} }
 };
-let historyData = JSON.parse(localStorage.getItem('ckckt_hist_v25')) || [];
+
+// 更改存儲金鑰，確保強制讀取完整名單
+let students = JSON.parse(localStorage.getItem('ckc_stu_v26'));
+if (!students || students.length < 50) students = CORE_STUDENTS; // 若名單遺失，強制重新載入
+
+let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
+let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
+let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || JSON.parse(localStorage.getItem('ckckt_cfg_v23')) || DEFAULT_SQUAD_CONFIG;
+let historyData = JSON.parse(localStorage.getItem('ckckt_hist_v26')) || [];
 
 const events = ["60m", "100m", "200m", "400m", "跳遠", "跳高", "擲壘球", "推鉛球", "4x100m"];
 let activeSlot = null;
@@ -227,40 +244,85 @@ window.onload = () => {
 
 function refreshUI() { updateResNames(); renderRecords(); renderStudentAdmin(); renderSquadBoard(); renderHistoryTable(); }
 function saveAll() {
-    localStorage.setItem('ckc_stu_v21', JSON.stringify(students));
-    localStorage.setItem('ckc_rec_v21', JSON.stringify(records));
-    localStorage.setItem('ckc_sq_v21', JSON.stringify(squads));
-    localStorage.setItem('ckckt_cfg_v23', JSON.stringify(squadConfig));
-    localStorage.setItem('ckckt_hist_v25', JSON.stringify(historyData));
+    localStorage.setItem('ckc_stu_v26', JSON.stringify(students));
+    localStorage.setItem('ckc_rec_v26', JSON.stringify(records));
+    localStorage.setItem('ckc_sq_v26', JSON.stringify(squads));
+    localStorage.setItem('ckckt_cfg_v26', JSON.stringify(squadConfig));
+    localStorage.setItem('ckckt_hist_v26', JSON.stringify(historyData));
 }
 
-// --- 歷屆成績分頁邏輯 ---
-function importHistoryExcel(event) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
+// ==========================================
+// 歷屆成績專用「智能解析器」(專治特殊Excel)
+// ==========================================
+async function importHistoryExcel(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    let newHistoryData = [];
+    
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const data = await file.arrayBuffer();
         const workbook = XLSX.read(data, { type: 'array' });
-        let allData = [];
+        
         workbook.SheetNames.forEach(sheetName => {
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-            json.forEach(row => {
-                allData.push({
-                    grade: row['組別'] || sheetName, 
-                    event: row['項目'] || row['Event'],
-                    rank: row['名次'] || row['Rank'],
-                    name: row['姓名'] || row['Name'],
-                    school: row['學校'] || row['School'],
-                    result: row['成績'] || row['Result']
-                });
-            });
+            if (sheetName.includes('團體')) return; // 跳過團體成績
+            
+            // 判斷組別名稱
+            let gradeStr = sheetName.replace('.csv', '').replace('STAT-2526-List of Awardees.xlsx - ', '').trim();
+            if (file.name.includes('男甲')) gradeStr = '男甲';
+            else if (file.name.includes('男乙')) gradeStr = '男乙';
+            else if (file.name.includes('男丙')) gradeStr = '男丙';
+            else if (file.name.includes('女甲')) gradeStr = '女甲';
+            else if (file.name.includes('女乙')) gradeStr = '女乙';
+            else if (file.name.includes('女丙')) gradeStr = '女丙';
+
+            const aoa = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+            
+            for (let r = 0; r < aoa.length; r++) {
+                const row = aoa[r];
+                if (!row || !row.length) continue;
+                
+                const col0 = String(row[0] || '').trim();
+                
+                // 偵測到有項目名稱 (如 60米, 跳遠...)
+                if (col0.match(/(米|跳|擲|推|4x)/)) {
+                    let eventName = col0;
+                    let schoolRow = aoa[r+1] || [];
+                    let resultRow = aoa[r+2] || [];
+                    
+                    // 偵測「成績行」是否向左偏移了 (若第0格是數字而非空值)
+                    let isShifted = false;
+                    if (resultRow.length > 0 && resultRow[0] !== undefined && String(resultRow[0]).trim() !== '' && !String(resultRow[0]).includes(eventName)) {
+                        isShifted = true; 
+                    }
+
+                    // 抓取 1 到 8 名
+                    for (let c = 1; c <= 8; c++) {
+                        let name = row[c];
+                        if (!name || String(name).trim() === '') continue;
+                        
+                        let school = schoolRow[c] || "";
+                        let result = isShifted ? resultRow[c-1] : resultRow[c]; // 自動修正錯位
+                        
+                        newHistoryData.push({
+                            grade: gradeStr,
+                            event: eventName,
+                            rank: `第${c}名`,
+                            name: String(name).replace(/\n/g, '').trim(),
+                            school: String(school).replace(/\n/g, '').trim(),
+                            result: String(result || '').replace(/\n/g, '').trim()
+                        });
+                    }
+                }
+            }
         });
-        historyData = allData;
-        saveAll();
-        renderHistoryTable();
-        alert("歷屆成績匯入成功！");
-    };
-    reader.readAsArrayBuffer(file);
+    }
+    
+    historyData = historyData.concat(newHistoryData); // 附加到現有紀錄
+    saveAll();
+    renderHistoryTable();
+    alert(`成功智能解析並匯入！共新增了 ${newHistoryData.length} 筆歷屆數據。`);
 }
 
 function renderHistoryTable() {
@@ -270,7 +332,7 @@ function renderHistoryTable() {
     
     const filtered = historyData.filter(h => 
         (h.grade.includes(grade)) && 
-        (h.event.toLowerCase().includes(search) || h.name.toLowerCase().includes(search))
+        (h.event.toLowerCase().includes(search) || h.name.toLowerCase().includes(search) || h.school.toLowerCase().includes(search))
     );
 
     area.innerHTML = filtered.map(h => `
@@ -283,14 +345,14 @@ function renderHistoryTable() {
         </tr>
     `).join('');
     
-    if(filtered.length === 0) area.innerHTML = "<tr><td colspan='5' style='text-align:center;'>尚無數據，請匯入 Excel 檔案。</td></tr>";
+    if(filtered.length === 0) area.innerHTML = "<tr><td colspan='5' style='text-align:center;'>尚無數據，請點擊上方按鈕匯入學界 Excel/CSV 檔案。</td></tr>";
 }
 
 function clearHistory() {
     if(confirm("確定要清空所有歷屆參考成績嗎？")) { historyData = []; saveAll(); renderHistoryTable(); }
 }
 
-// --- 數據分析：進步曲線修正邏輯 (維持 V24 優點) ---
+// --- 數據分析：進步曲線 (日期排序修正保留) ---
 function updateAnalysis() {
     const yr = parseInt(document.getElementById('chartYear').value);
     const g = document.getElementById('chartGender').value;
@@ -301,6 +363,7 @@ function updateAnalysis() {
     filtered.forEach(r => { if(!bests[r.name] || (isField ? r.val > bests[r.name].val : r.val < bests[r.name].val)) bests[r.name] = r; });
     const top5 = Object.values(bests).sort((a,b) => isField ? b.val - a.val : a.val - b.val).slice(0,5);
     document.getElementById('top5Area').innerHTML = top5.map((r, i) => `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.val}</td><td>${r.comp}</td><td>${r.date}</td></tr>`).join('');
+    
     const sortedLabels = [...new Set(filtered.map(r => r.date))].sort((a,b) => new Date(a) - new Date(b));
     const studentData = {}; filtered.forEach(r => { if(!studentData[r.name]) studentData[r.name] = []; studentData[r.name].push({ x: r.date, y: r.val }); });
     if(chartInstance) chartInstance.destroy();
@@ -310,7 +373,7 @@ function updateAnalysis() {
     });
 }
 
-// --- 排陣管理與其餘功能 (維持 V23/V24 邏輯) ---
+// --- 排陣管理與其他功能 ---
 function switchTab(id) { 
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); 
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
@@ -324,8 +387,7 @@ function addOrUpdateConfig() {
     const evName = document.getElementById('cfgEventName').value.trim(), quota = parseInt(document.getElementById('cfgQuota').value);
     if(!evName || isNaN(quota)) return alert("請輸入項目及名額");
     if(!squadConfig[comp][gKey]) squadConfig[comp][gKey] = {};
-    squadConfig[comp][gKey][evName] = quota;
-    saveAll(); renderSquadBoard();
+    squadConfig[comp][gKey][evName] = quota; saveAll(); renderSquadBoard();
 }
 function deleteConfigEvent() {
     const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value.replace('F', '');
@@ -384,7 +446,7 @@ function updateResNames() { const yr=parseInt(document.getElementById('resYear')
 function addNewStudent() { const n=document.getElementById('newStuName').value.trim(), y=parseInt(document.getElementById('newStuYear').value), g=document.getElementById('newStuGender').value; if(n){students.push({n,y,g});saveAll();renderStudentAdmin();updateResNames();document.getElementById('newStuName').value="";} }
 function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML = students.sort((a,b)=>b.y-a.y).map(s=>`<tr><td>${s.n}</td><td>${s.y}</td><td>${s.g}</td><td>${getGradeByYear(s.y)}</td><td><button onclick="deleteStudent('${s.n}',${s.y})">廢除</button></td></tr>`).join(''); }
 function deleteStudent(n,y) { if(confirm("廢除？")){students=students.filter(s=>!(s.n==n&&s.y==y));saveAll();renderStudentAdmin();} }
-function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V25.xlsx`); }
+function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V26.xlsx`); }
 function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
 </script>
 </body>
