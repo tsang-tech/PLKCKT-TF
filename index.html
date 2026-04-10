@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V26</title>
+    <title>PLKCKT 田徑隊管理系統 V27</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -51,7 +51,7 @@
 <body>
 
 <div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V26</h1>
+    <h1>PLKCKT 田徑隊管理系統 V27</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
@@ -101,19 +101,18 @@
     <div id="history" class="tab-content">
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                <h3>🏆 歷屆各項前八名參考數據</h3>
-                <div>
-                    <button class="btn btn-orange" onclick="document.getElementById('importHistoryFile').click()">📥 批量匯入歷屆數據 (Excel/CSV)</button>
-                    <input type="file" id="importHistoryFile" style="display:none" accept=".xlsx,.csv" multiple onchange="importHistoryExcel(event)">
-                    <button class="btn btn-red" onclick="clearHistory()">🗑️ 清空歷屆數據</button>
-                </div>
+                <h3>🏆 歷屆各項前八名參考數據 (25/26 沙田區)</h3>
             </div>
             <div class="grid" style="margin-top:15px;">
                 <select id="histGrade" onchange="renderHistoryTable()">
-                    <option value="男甲">男甲</option><option value="男乙">男乙</option><option value="男丙">男丙</option>
-                    <option value="女甲">女甲</option><option value="女乙">女乙</option><option value="女丙">女丙</option>
+                    <option value="男甲">男甲</option>
+                    <option value="男乙">男乙</option>
+                    <option value="男丙">男丙</option>
+                    <option value="女甲">女甲</option>
+                    <option value="女乙">女乙</option>
+                    <option value="女丙">女丙</option>
                 </select>
-                <input type="text" id="histSearch" placeholder="🔍 搜尋項目 (如: 100m)..." oninput="renderHistoryTable()">
+                <input type="text" id="histSearch" placeholder="🔍 搜尋項目 (如: 100米)..." oninput="renderHistoryTable()">
             </div>
             <div class="table-wrapper">
                 <table id="historyTable">
@@ -198,6 +197,91 @@
 </div>
 
 <script>
+// --- 內建歷屆數據 (根據您提供的 男甲.csv 處理) ---
+const BUILT_IN_HISTORY = [
+    // 男甲 60米
+    { grade: "男甲", event: "60米", rank: "第一名", name: "楊鴻軒", school: "蕭漢森", result: "7.88*" },
+    { grade: "男甲", event: "60米", rank: "第二名", name: "陳建璇", school: "泰伯", result: "8.41" },
+    { grade: "男甲", event: "60米", rank: "第三名", name: "戚錦森", school: "慈航", result: "8.455" },
+    { grade: "男甲", event: "60米", rank: "第四名", name: "刘尚奇", school: "莊啟程", result: "8.457" },
+    { grade: "男甲", event: "60米", rank: "第五名", name: "周諺泓", school: "靈糧", result: "8.49" },
+    { grade: "男甲", event: "60米", rank: "第六名", name: "張俊然", school: "台山陳元喜", result: "8.55" },
+    { grade: "男甲", event: "60米", rank: "第七名", name: "樊浠睿", school: "慈航", result: "8.77" },
+    { grade: "男甲", event: "60米", rank: "第八名", name: "倫睿言", school: "沙呂小", result: "8.84" },
+    // 男甲 100米
+    { grade: "男甲", event: "100米", rank: "第一名", name: "高偉軒", school: "慈航", result: "13.05" },
+    { grade: "男甲", event: "100米", rank: "第二名", name: "阮靖曦", school: "沙呂小", result: "13.18" },
+    { grade: "男甲", event: "100米", rank: "第三名", name: "李文灝", school: "王賜豪", result: "13.34" },
+    { grade: "男甲", event: "100米", rank: "第四名", name: "簡梓軒", school: "慈航", result: "13.39" },
+    { grade: "男甲", event: "100米", rank: "第五名", name: "施醇澧", school: "靈糧", result: "13.95" },
+    { grade: "男甲", event: "100米", rank: "第六名", name: "葉軒成", school: "沙官", result: "14.17" },
+    { grade: "男甲", event: "100米", rank: "第七名", name: "陳梓燊", school: "馬主風", result: "14.23" },
+    { grade: "男甲", event: "100米", rank: "第八名", name: "吳一航", school: "沙田圍胡素貞", result: "14.29" },
+    // 男甲 200米
+    { grade: "男甲", event: "200米", rank: "第一名", name: "文宥鈞", school: "台山陳元喜", result: "25.92*" },
+    { grade: "男甲", event: "200米", rank: "第二名", name: "劉逸深", school: "主風", result: "26.53*" },
+    { grade: "男甲", event: "200米", rank: "第三名", name: "吳灝霖", school: "聖華", result: "28.53" },
+    { grade: "男甲", event: "200米", rank: "第四名", name: "吳承臻", school: "台山陳元喜", result: "28.93" },
+    { grade: "男甲", event: "200米", rank: "第五名", name: "馬德晉", school: "沙循", result: "28.97" },
+    { grade: "男甲", event: "200米", rank: "第六名", name: "楊洛誠", school: "愛禮信", result: "29.19" },
+    { grade: "男甲", event: "200米", rank: "第七名", name: "林東", school: "雨川", result: "29.71" },
+    { grade: "男甲", event: "200米", rank: "第八名", name: "李東臨", school: "浸呂小", result: "30.09" },
+    // 男甲 400米
+    { grade: "男甲", event: "400米", rank: "第一名", name: "區煒楠", school: "馬主風", result: "1:02.55*" },
+    { grade: "男甲", event: "400米", rank: "第二名", name: "李泓澔", school: "蔡榮星", result: "1:05.53" },
+    { grade: "男甲", event: "400米", rank: "第三名", name: "蔡晉紳", school: "蔡榮星", result: "1:06.23" },
+    { grade: "男甲", event: "400米", rank: "第四名", name: "陳睿豐", school: "沙官", result: "1:08.01" },
+    { grade: "男甲", event: "400米", rank: "第五名", name: "陳思鳴", school: "浸大附小", result: "1:08.36" },
+    { grade: "男甲", event: "400米", rank: "第六名", name: "林恩樂", school: "沙呂小", result: "1:08.46" },
+    { grade: "男甲", event: "400米", rank: "第七名", name: "譚哲昂", school: "台山陳元喜", result: "1:08.77" },
+    { grade: "男甲", event: "400米", rank: "第八名", name: "陳浩俊", school: "張煊昌", result: "1:10.50" },
+    // 男甲 跳高
+    { grade: "男甲", event: "跳高", rank: "第一名", name: "樊浠睿", school: "慈航", result: "1.40米" },
+    { grade: "男甲", event: "跳高", rank: "第二名", name: "馬德晉", school: "沙循", result: "1.35米" },
+    { grade: "男甲", event: "跳高", rank: "第三名", name: "陳柏熹", school: "浸大附小", result: "1.35米" },
+    { grade: "男甲", event: "跳高", rank: "第四名", name: "陳梓燊", school: "馬主風", result: "1.30米" },
+    { grade: "男甲", event: "跳高", rank: "第五名", name: "陳睿豐", school: "沙官", result: "1.30米" },
+    { grade: "男甲", event: "跳高", rank: "第六名", name: "馮嘉軒", school: "主風", result: "1.25米" },
+    { grade: "男甲", event: "跳高", rank: "第七名", name: "吳一航/吳承臻/戴壹進", school: "沙田圍胡素貞/台山陳元喜/靈糧", result: "1.20米" },
+    // 男甲 跳遠
+    { grade: "男甲", event: "跳遠", rank: "第一名", name: "區煒楠", school: "馬主風", result: "4.54米" },
+    { grade: "男甲", event: "跳遠", rank: "第二名", name: "簡梓軒", school: "慈航", result: "4.46米" },
+    { grade: "男甲", event: "跳遠", rank: "第三名", name: "李泓澔", school: "蔡榮星", result: "4.36米" },
+    { grade: "男甲", event: "跳遠", rank: "第四名", name: "林東", school: "雨川", result: "4.15米" },
+    { grade: "男甲", event: "跳遠", rank: "第五名", name: "張俊然", school: "台山陳元喜", result: "4.04米" },
+    { grade: "男甲", event: "跳遠", rank: "第六名", name: "高嘉壕", school: "張煌偉", result: "4.03米" },
+    { grade: "男甲", event: "跳遠", rank: "第七名", name: "徐振然", school: "沙田圍胡素貞", result: "4.01米" },
+    { grade: "男甲", event: "跳遠", rank: "第八名", name: "陳浩俊", school: "張煊昌", result: "3.93米" },
+    // 男甲 擲壘球
+    { grade: "男甲", event: "擲壘球", rank: "第一名", name: "李浩然", school: "培僑書院", result: "47.32米" },
+    { grade: "男甲", event: "擲壘球", rank: "第二名", name: "李承禧", school: "胡素貞", result: "42.72米" },
+    { grade: "男甲", event: "擲壘球", rank: "第三名", name: "關文皓", school: "純陽", result: "39.13米" },
+    { grade: "男甲", event: "擲壘球", rank: "第四名", name: "吳珀賢", school: "王賜豪", result: "38.96米" },
+    { grade: "男甲", event: "擲壘球", rank: "第五名", name: "麥恩諾", school: "馬主風", result: "38.74米" },
+    { grade: "男甲", event: "擲壘球", rank: "第六名", name: "鍾牧泓", school: "沙呂小", result: "37.33米" },
+    { grade: "男甲", event: "擲壘球", rank: "第七名", name: "盧思衡", school: "泰伯", result: "37.19米" },
+    { grade: "男甲", event: "擲壘球", rank: "第八名", name: "崔子進", school: "張煊昌", result: "36.41米" },
+    // 男甲 推鉛球
+    { grade: "男甲", event: "推鉛球", rank: "第一名", name: "戚錦森", school: "慈航", result: "9.45米" },
+    { grade: "男甲", event: "推鉛球", rank: "第二名", name: "楊鴻軒", school: "蕭漢森", result: "8.36米" },
+    { grade: "男甲", event: "推鉛球", rank: "第三名", name: "張德邦", school: "禧年恩平", result: "8.31米" },
+    { grade: "男甲", event: "推鉛球", rank: "第四名", name: "黃曉楊", school: "沙循", result: "7.41米" },
+    { grade: "男甲", event: "推鉛球", rank: "第五名", name: "周貴睿", school: "救田家炳", result: "7.17米" },
+    { grade: "男甲", event: "推鉛球", rank: "第六名", name: "王煜偉", school: "馬循", result: "7.02米" },
+    { grade: "男甲", event: "推鉛球", rank: "第七名", name: "黃一騰", school: "莊啟程", result: "6.78米" },
+    { grade: "男甲", event: "推鉛球", rank: "第八名", name: "林柏峯", school: "浸大附小", result: "6.67米" },
+    // 男甲 接力
+    { grade: "男甲", event: "4x100米接力", rank: "第一名", name: "慈航", school: "", result: "52.61*" },
+    { grade: "男甲", event: "4x100米接力", rank: "第二名", name: "台山陳元喜", school: "", result: "53.66" },
+    { grade: "男甲", event: "4x100米接力", rank: "第三名", name: "沙呂小", school: "", result: "55.66" },
+    { grade: "男甲", event: "4x100米接力", rank: "第四名", name: "靈糧", school: "", result: "55.84" },
+    { grade: "男甲", event: "4x100米接力", rank: "第五名", name: "蔡榮星", school: "", result: "56.03" },
+    { grade: "男甲", event: "4x100米接力", rank: "第六名", name: "蕭漢森", school: "", result: "56.98" },
+    { grade: "男甲", event: "4x100米接力", rank: "第七名", name: "馬主風", school: "", result: "57.53" },
+    { grade: "男甲", event: "4x100米接力", rank: "第八名", name: "沙官", school: "", result: "57.72" }
+];
+
+
 // --- 核心學生名單 (102名永久保留) ---
 const CORE_STUDENTS = [
     {n:"朱政熙",y:2015,g:"M"},{n:"陳浩霆",y:2015,g:"M"},{n:"黃樂童",y:2015,g:"M"},{n:"林俊宇",y:2015,g:"M"},{n:"鄭悅朗",y:2015,g:"M"},{n:"梁匡茗",y:2015,g:"M"},{n:"劉凱諾",y:2015,g:"M"},{n:"陳楷洋",y:2015,g:"M"},{n:"鍾政言",y:2015,g:"M"},{n:"李泓正",y:2015,g:"M"},{n:"張焯珽",y:2015,g:"M"},{n:"黃日希",y:2015,g:"M"},
@@ -216,14 +300,16 @@ const DEFAULT_SQUAD_CONFIG = {
     five: { A: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, B: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, C: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6}, D: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6} }
 };
 
-// 更改存儲金鑰，確保強制讀取完整名單
-let students = JSON.parse(localStorage.getItem('ckc_stu_v26'));
-if (!students || students.length < 50) students = CORE_STUDENTS; // 若名單遺失，強制重新載入
+let students = JSON.parse(localStorage.getItem('ckc_stu_v27'));
+if (!students || students.length < 50) students = CORE_STUDENTS;
 
-let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
-let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
-let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || JSON.parse(localStorage.getItem('ckckt_cfg_v23')) || DEFAULT_SQUAD_CONFIG;
-let historyData = JSON.parse(localStorage.getItem('ckckt_hist_v26')) || [];
+let records = JSON.parse(localStorage.getItem('ckc_rec_v27')) || JSON.parse(localStorage.getItem('ckc_rec_v26')) || [];
+let squads = JSON.parse(localStorage.getItem('ckc_sq_v27')) || JSON.parse(localStorage.getItem('ckc_sq_v26')) || {};
+let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v27')) || JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || DEFAULT_SQUAD_CONFIG;
+
+// 載入預設的歷屆成績
+let historyData = JSON.parse(localStorage.getItem('ckckt_hist_v27'));
+if (!historyData || historyData.length === 0) historyData = BUILT_IN_HISTORY;
 
 const events = ["60m", "100m", "200m", "400m", "跳遠", "跳高", "擲壘球", "推鉛球", "4x100m"];
 let activeSlot = null;
@@ -244,87 +330,14 @@ window.onload = () => {
 
 function refreshUI() { updateResNames(); renderRecords(); renderStudentAdmin(); renderSquadBoard(); renderHistoryTable(); }
 function saveAll() {
-    localStorage.setItem('ckc_stu_v26', JSON.stringify(students));
-    localStorage.setItem('ckc_rec_v26', JSON.stringify(records));
-    localStorage.setItem('ckc_sq_v26', JSON.stringify(squads));
-    localStorage.setItem('ckckt_cfg_v26', JSON.stringify(squadConfig));
-    localStorage.setItem('ckckt_hist_v26', JSON.stringify(historyData));
+    localStorage.setItem('ckc_stu_v27', JSON.stringify(students));
+    localStorage.setItem('ckc_rec_v27', JSON.stringify(records));
+    localStorage.setItem('ckc_sq_v27', JSON.stringify(squads));
+    localStorage.setItem('ckckt_cfg_v27', JSON.stringify(squadConfig));
+    localStorage.setItem('ckckt_hist_v27', JSON.stringify(historyData));
 }
 
-// ==========================================
-// 歷屆成績專用「智能解析器」(專治特殊Excel)
-// ==========================================
-async function importHistoryExcel(event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    
-    let newHistoryData = [];
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        workbook.SheetNames.forEach(sheetName => {
-            if (sheetName.includes('團體')) return; // 跳過團體成績
-            
-            // 判斷組別名稱
-            let gradeStr = sheetName.replace('.csv', '').replace('STAT-2526-List of Awardees.xlsx - ', '').trim();
-            if (file.name.includes('男甲')) gradeStr = '男甲';
-            else if (file.name.includes('男乙')) gradeStr = '男乙';
-            else if (file.name.includes('男丙')) gradeStr = '男丙';
-            else if (file.name.includes('女甲')) gradeStr = '女甲';
-            else if (file.name.includes('女乙')) gradeStr = '女乙';
-            else if (file.name.includes('女丙')) gradeStr = '女丙';
-
-            const aoa = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
-            
-            for (let r = 0; r < aoa.length; r++) {
-                const row = aoa[r];
-                if (!row || !row.length) continue;
-                
-                const col0 = String(row[0] || '').trim();
-                
-                // 偵測到有項目名稱 (如 60米, 跳遠...)
-                if (col0.match(/(米|跳|擲|推|4x)/)) {
-                    let eventName = col0;
-                    let schoolRow = aoa[r+1] || [];
-                    let resultRow = aoa[r+2] || [];
-                    
-                    // 偵測「成績行」是否向左偏移了 (若第0格是數字而非空值)
-                    let isShifted = false;
-                    if (resultRow.length > 0 && resultRow[0] !== undefined && String(resultRow[0]).trim() !== '' && !String(resultRow[0]).includes(eventName)) {
-                        isShifted = true; 
-                    }
-
-                    // 抓取 1 到 8 名
-                    for (let c = 1; c <= 8; c++) {
-                        let name = row[c];
-                        if (!name || String(name).trim() === '') continue;
-                        
-                        let school = schoolRow[c] || "";
-                        let result = isShifted ? resultRow[c-1] : resultRow[c]; // 自動修正錯位
-                        
-                        newHistoryData.push({
-                            grade: gradeStr,
-                            event: eventName,
-                            rank: `第${c}名`,
-                            name: String(name).replace(/\n/g, '').trim(),
-                            school: String(school).replace(/\n/g, '').trim(),
-                            result: String(result || '').replace(/\n/g, '').trim()
-                        });
-                    }
-                }
-            }
-        });
-    }
-    
-    historyData = historyData.concat(newHistoryData); // 附加到現有紀錄
-    saveAll();
-    renderHistoryTable();
-    alert(`成功智能解析並匯入！共新增了 ${newHistoryData.length} 筆歷屆數據。`);
-}
-
+// --- 歷屆成績表格顯示 ---
 function renderHistoryTable() {
     const grade = document.getElementById('histGrade').value;
     const search = document.getElementById('histSearch').value.toLowerCase();
@@ -345,14 +358,10 @@ function renderHistoryTable() {
         </tr>
     `).join('');
     
-    if(filtered.length === 0) area.innerHTML = "<tr><td colspan='5' style='text-align:center;'>尚無數據，請點擊上方按鈕匯入學界 Excel/CSV 檔案。</td></tr>";
+    if(filtered.length === 0) area.innerHTML = "<tr><td colspan='5' style='text-align:center;'>此組別尚未匯入數據。</td></tr>";
 }
 
-function clearHistory() {
-    if(confirm("確定要清空所有歷屆參考成績嗎？")) { historyData = []; saveAll(); renderHistoryTable(); }
-}
-
-// --- 數據分析：進步曲線 (日期排序修正保留) ---
+// --- 數據分析 ---
 function updateAnalysis() {
     const yr = parseInt(document.getElementById('chartYear').value);
     const g = document.getElementById('chartGender').value;
@@ -446,7 +455,7 @@ function updateResNames() { const yr=parseInt(document.getElementById('resYear')
 function addNewStudent() { const n=document.getElementById('newStuName').value.trim(), y=parseInt(document.getElementById('newStuYear').value), g=document.getElementById('newStuGender').value; if(n){students.push({n,y,g});saveAll();renderStudentAdmin();updateResNames();document.getElementById('newStuName').value="";} }
 function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML = students.sort((a,b)=>b.y-a.y).map(s=>`<tr><td>${s.n}</td><td>${s.y}</td><td>${s.g}</td><td>${getGradeByYear(s.y)}</td><td><button onclick="deleteStudent('${s.n}',${s.y})">廢除</button></td></tr>`).join(''); }
 function deleteStudent(n,y) { if(confirm("廢除？")){students=students.filter(s=>!(s.n==n&&s.y==y));saveAll();renderStudentAdmin();} }
-function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V26.xlsx`); }
+function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V27.xlsx`); }
 function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
 </script>
 </body>
