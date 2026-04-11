@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V33</title>
+    <title>PLKCKT 田徑隊管理系統 V34</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -53,7 +53,7 @@
 <body>
 
 <div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V33</h1>
+    <h1>PLKCKT 田徑隊管理系統 V34</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
@@ -210,6 +210,20 @@
 
 <script>
 // ==========================================
+// 核心學生名單 (102名永久保留，V34補回)
+// ==========================================
+const CORE_STUDENTS = [
+    {n:"朱政熙",y:2015,g:"M"},{n:"陳浩霆",y:2015,g:"M"},{n:"黃樂童",y:2015,g:"M"},{n:"林俊宇",y:2015,g:"M"},{n:"鄭悅朗",y:2015,g:"M"},{n:"梁匡茗",y:2015,g:"M"},{n:"劉凱諾",y:2015,g:"M"},{n:"陳楷洋",y:2015,g:"M"},{n:"鍾政言",y:2015,g:"M"},{n:"李泓正",y:2015,g:"M"},{n:"張焯珽",y:2015,g:"M"},{n:"黃日希",y:2015,g:"M"},
+    {n:"黃子晴",y:2015,g:"F"},{n:"羅文君",y:2015,g:"F"},{n:"譚念珈",y:2015,g:"F"},{n:"許芯語",y:2015,g:"F"},{n:"施驊倩",y:2015,g:"F"},{n:"黃鈺瞳",y:2015,g:"F"},{n:"曾釨渘",y:2015,g:"F"},{n:"王恩烯",y:2015,g:"F"},{n:"彭乙晴",y:2015,g:"F"},{n:"顏卡蜜拉",y:2015,g:"F"},
+    {n:"沈卓諾",y:2016,g:"M"},{n:"邱梓傑",y:2016,g:"M"},{n:"劉緻彥",y:2016,g:"M"},{n:"李宇澤",y:2016,g:"M"},{n:"黃柏禧",y:2016,g:"M"},{n:"陳灝軒",y:2016,g:"M"},{n:"黃梓澧",y:2016,g:"M"},{n:"岳青辰",y:2016,g:"M"},{n:"周駿熹",y:2016,g:"M"},{n:"劉君浩",y:2016,g:"M"},{n:"梁宇翹",y:2016,g:"M"},{n:"黃梓浩",y:2016,g:"M"},
+    {n:"朱兆然",y:2016,g:"F"},{n:"張穎忻",y:2016,g:"F"},{n:"陳曉澄",y:2016,g:"F"},{n:"伍熹榆",y:2016,g:"F"},{n:"黃藝之",y:2016,g:"F"},{n:"高梓翹",y:2016,g:"F"},{n:"薛雨菲",y:2016,g:"F"},{n:"葉希嵐",y:2016,g:"F"},{n:"張懷瑾",y:2016,g:"F"},{n:"張懷蔚",y:2016,g:"F"},{n:"楊倬欣",y:2016,g:"F"},{n:"陳詩晴",y:2016,g:"F"},{n:"丘倩柔",y:2016,g:"F"},
+    {n:"羅啟鋒",y:2017,g:"M"},{n:"梁匡毅",y:2017,g:"M"},{n:"郭俊希",y:2017,g:"M"},{n:"盧鍵霆",y:2017,g:"M"},{n:"江柏昊",y:2017,g:"M"},{n:"鄧萃藍",y:2017,g:"M"},{n:"黃星澧",y:2017,g:"M"},{n:"彭子恪",y:2017,g:"M"},{n:"余卓謙",y:2017,g:"M"},{n:"劉栢熹",y:2017,g:"M"},{n:"胡梓賢",y:2017,g:"M"},{n:"麥風",y:2017,g:"M"},{n:"楊少琪",y:2017,g:"M"},{n:"徐梓程",y:2017,g:"M"},{n:"余焌達",y:2017,g:"M"},
+    {n:"陳諾彤",y:2017,g:"F"},{n:"李思穎",y:2017,g:"F"},{n:"袁煜婷",y:2017,g:"F"},{n:"陳浠庭",y:2017,g:"F"},{n:"曾涴嘉",y:2017,g:"F"},{n:"陳迦琳",y:2017,g:"F"},{n:"焦梓涵",y:2017,g:"F"},{n:"鄧芓游",y:2017,g:"F"},{n:"蔡蔚言",y:2017,g:"F"},{n:"方一心",y:2017,g:"F"},{n:"儲思佳",y:2017,g:"F"},{n:"徐梓瑤",y:2017,g:"F"},{n:"陳希妍",y:2017,g:"F"},
+    {n:"謝瀚陞",y:2018,g:"M"},{n:"胡仲希",y:2018,g:"M"},{n:"黃語浚",y:2018,g:"M"},{n:"梁喬珀",y:2018,g:"M"},{n:"鄔嘉樂",y:2018,g:"M"},{n:"林建宇",y:2018,g:"M"},{n:"李泓亮",y:2018,g:"M"},{n:"廖柏希",y:2018,g:"M"},{n:"伍梓灝",y:2018,g:"M"},{n:"陳境逸",y:2018,g:"M"},{n:"李天仁",y:2018,g:"M"},{n:"黃洛鋋",y:2018,g:"M"},{n:"杜濼麒",y:2018,g:"M"},{n:"李宇軒",y:2018,g:"M"},
+    {n:"周暟淳",y:2018,g:"F"},{n:"陳希兒",y:2018,g:"F"},{n:"鄧善殷",y:2018,g:"F"},{n:"李晉兒",y:2018,g:"F"},{n:"鄧雅殷",y:2018,g:"F"},{n:"雪壬愷",y:2018,g:"F"},{n:"邱曼露",y:2018,g:"F"},{n:"李心妤",y:2018,g:"F"},{n:"李梓雯",y:2018,g:"F"},{n:"張善愉",y:2018,g:"F"},{n:"麥稀澄",y:2018,g:"F"},{n:"童文涵",y:2018,g:"F"},{n:"林靖柔",y:2018,g:"F"}
+];
+
+// ==========================================
 // 大會紀錄常數表
 // ==========================================
 const TOURNAMENT_RECORDS = {
@@ -279,7 +293,9 @@ const BUILT_IN_HISTORY = [
 ];
 
 // 初始化學生名單與紀錄
-let students = JSON.parse(localStorage.getItem('ckc_stu_v26')) || [];
+let students = JSON.parse(localStorage.getItem('ckc_stu_v26'));
+if (!students || students.length < 50) students = CORE_STUDENTS;
+
 let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
 let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
 let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || {
@@ -448,7 +464,7 @@ function updateResNames() { const yr=parseInt(document.getElementById('resYear')
 function addNewStudent() { const n=document.getElementById('newStuName').value.trim(), y=parseInt(document.getElementById('newStuYear').value), g=document.getElementById('newStuGender').value; if(n){students.push({n,y,g});saveAll();renderStudentAdmin();updateResNames();document.getElementById('newStuName').value="";} }
 function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML = students.sort((a,b)=>b.y-a.y).map(s=>`<tr><td>${s.n}</td><td>${s.y}</td><td>${s.g}</td><td>${getGradeByYear(s.y)}</td><td><button onclick="deleteStudent('${s.n}',${s.y})">廢除</button></td></tr>`).join(''); }
 function deleteStudent(n,y) { if(confirm("廢除？")){students=students.filter(s=>!(s.n==n&&s.y==y));saveAll();renderStudentAdmin();} }
-function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V33.xlsx`); }
+function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V34.xlsx`); }
 function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
 </script>
 </body>
