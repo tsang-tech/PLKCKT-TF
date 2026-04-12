@@ -47,6 +47,11 @@
         .picker-content { background:white; width:90%; max-width:450px; padding:20px; border-radius:15px; max-height:80vh; display:flex; flex-direction:column; }
         .picker-list { overflow-y:auto; flex-grow:1; margin:15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+        /* 計分板專用樣式 */
+        .score-input { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .total-row td { font-weight: bold; background-color: #e9ecef; font-size: 1.1em; }
+        #total-score { color: #d9534f; font-size: 1.2em; }
+
         @media print { .no-print { display: none !important; } table { border: 1px solid #000; } }
     </style>
 </head>
@@ -178,7 +183,31 @@
                     <button class="btn btn-red" onclick="deleteConfigEvent()">刪除項目</button>
                 </div>
             </div>
+            
             <div id="squadBoard" class="squad-container"></div>
+
+            <div id="scoreBoardContainer" style="margin-top: 30px; display: none;">
+                <h3 style="border-bottom: 2px solid var(--plk-blue); padding-bottom: 10px;">📊 即時計分板</h3>
+                <div class="table-wrapper">
+                    <table id="scoreTable">
+                        <thead>
+                            <tr>
+                                <th style="background-color: var(--plk-blue); color: white;">比賽項目</th>
+                                <th style="background-color: var(--plk-blue); color: white;">參賽運動員</th>
+                                <th style="background-color: var(--plk-blue); color: white;">項目分數</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoreTableBody"></tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2" style="text-align: right;">當前組別總分數：</td>
+                                <td><span id="total-score">0</span> 分</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -239,7 +268,6 @@ const TOURNAMENT_RECORDS = {
 // 完整歷屆成績庫 (內置)
 // ==========================================
 const BUILT_IN_HISTORY = [
-    // ===== 男甲 =====
     { grade: "男甲", event: "60米", rank: "1", name: "楊鴻軒", school: "蕭漢森", result: "7.88*" }, { grade: "男甲", event: "60米", rank: "2", name: "陳建璇", school: "泰伯", result: "8.41" }, { grade: "男甲", event: "60米", rank: "3", name: "戚錦森", school: "慈航", result: "8.455" }, { grade: "男甲", event: "60米", rank: "4", name: "刘尚奇", school: "莊啟程", result: "8.457" }, { grade: "男甲", event: "60米", rank: "5", name: "周諺泓", school: "靈糧", result: "8.49" }, { grade: "男甲", event: "60米", rank: "6", name: "張俊然", school: "台山陳元喜", result: "8.55" }, { grade: "男甲", event: "60米", rank: "7", name: "樊浠睿", school: "慈航", result: "8.77" }, { grade: "男甲", event: "60米", rank: "8", name: "倫睿言", school: "沙呂小", result: "8.84" },
     { grade: "男甲", event: "100米", rank: "1", name: "高偉軒", school: "慈航", result: "13.05" }, { grade: "男甲", event: "100米", rank: "2", name: "阮靖曦", school: "沙呂小", result: "13.18" }, { grade: "男甲", event: "100米", rank: "3", name: "李文灝", school: "王賜豪", result: "13.34" }, { grade: "男甲", event: "100米", rank: "4", name: "簡梓軒", school: "慈航", result: "13.39" }, { grade: "男甲", event: "100米", rank: "5", name: "施醇澧", school: "靈糧", result: "13.95" }, { grade: "男甲", event: "100米", rank: "6", name: "葉軒成", school: "沙官", result: "14.17" }, { grade: "男甲", event: "100米", rank: "7", name: "陳梓燊", school: "馬主風", result: "14.23" }, { grade: "男甲", event: "100米", rank: "8", name: "吳一航", school: "沙田圍胡素貞", result: "14.29" },
     { grade: "男甲", event: "200米", rank: "1", name: "文宥鈞", school: "台山陳元喜", result: "25.92*" }, { grade: "男甲", event: "200米", rank: "2", name: "劉逸深", school: "主風", result: "26.53*" }, { grade: "男甲", event: "200米", rank: "3", name: "吳灝霖", school: "聖華", result: "28.53" }, { grade: "男甲", event: "200米", rank: "4", name: "吳承臻", school: "台山陳元喜", result: "28.93" }, { grade: "男甲", event: "200米", rank: "5", name: "馬德晉", school: "沙循", result: "28.97" }, { grade: "男甲", event: "200米", rank: "6", name: "楊洛誠", school: "愛禮信", result: "29.19" }, { grade: "男甲", event: "200米", rank: "7", name: "林東", school: "雨川", result: "29.71" }, { grade: "男甲", event: "200米", rank: "8", name: "李東臨", school: "浸呂小", result: "30.09" },
@@ -250,7 +278,6 @@ const BUILT_IN_HISTORY = [
     { grade: "男甲", event: "推鉛球", rank: "1", name: "戚錦森", school: "慈航", result: "9.45米" }, { grade: "男甲", event: "推鉛球", rank: "2", name: "楊鴻軒", school: "蕭漢森", result: "8.36米" }, { grade: "男甲", event: "推鉛球", rank: "3", name: "張德邦", school: "禧年恩平", result: "8.31米" }, { grade: "男甲", event: "推鉛球", rank: "4", name: "黃曉楊", school: "沙循", result: "7.41米" }, { grade: "男甲", event: "推鉛球", rank: "5", name: "周貴睿", school: "救田家炳", result: "7.17米" }, { grade: "男甲", event: "推鉛球", rank: "6", name: "王煜偉", school: "馬循", result: "7.02米" }, { grade: "男甲", event: "推鉛球", rank: "7", name: "黃一騰", school: "莊啟程", result: "6.78米" }, { grade: "男甲", event: "推鉛球", rank: "8", name: "林柏峯", school: "浸大附小", result: "6.67米" },
     { grade: "男甲", event: "接力", rank: "1", name: "慈航", school: "", result: "52.61*" }, { grade: "男甲", event: "接力", rank: "2", name: "台山陳元喜", school: "", result: "53.66" }, { grade: "男甲", event: "接力", rank: "3", name: "沙呂小", school: "", result: "55.66" }, { grade: "男甲", event: "接力", rank: "4", name: "靈糧", school: "", result: "55.84" }, { grade: "男甲", event: "接力", rank: "5", name: "蔡榮星", school: "", result: "56.03" }, { grade: "男甲", event: "接力", rank: "6", name: "蕭漢森", school: "", result: "56.98" }, { grade: "男甲", event: "接力", rank: "7", name: "馬主風", school: "", result: "57.53" }, { grade: "男甲", event: "接力", rank: "8", name: "沙官", school: "", result: "57.72" },
 
-    // ===== 男乙 =====
     { grade: "男乙", event: "60米", rank: "1", name: "彭森聰", school: "沙呂小", result: "8.64*" }, { grade: "男乙", event: "60米", rank: "2", name: "鄧樂平", school: "台山陳元喜", result: "8.96" }, { grade: "男乙", event: "60米", rank: "3", name: "邱信傑", school: "朱正賢", result: "9.06" }, { grade: "男乙", event: "60米", rank: "4", name: "梁程謙", school: "朱正賢", result: "9.15" }, { grade: "男乙", event: "60米", rank: "5", name: "程琛皓", school: "救田家炳", result: "9.16" }, { grade: "男乙", event: "60米", rank: "6", name: "梁靖玄", school: "無玷聖心", result: "9.2" }, { grade: "男乙", event: "60米", rank: "7", name: "李東熹", school: "浸呂小", result: "9.32" }, { grade: "男乙", event: "60米", rank: "8", name: "朱子键", school: "馬聖若瑟", result: "9.4" },
     { grade: "男乙", event: "100米", rank: "1", name: "莫子充", school: "王賜豪", result: "13.89" }, { grade: "男乙", event: "100米", rank: "2", name: "梁家軒", school: "浸大附小", result: "14.87" }, { grade: "男乙", event: "100米", rank: "3", name: "鄧懿諾", school: "浸大附小", result: "15.12" }, { grade: "男乙", event: "100米", rank: "4", name: "張作霖", school: "慈航", result: "15.2" }, { grade: "男乙", event: "100米", rank: "5", name: "吳鎧騫", school: "馬循", result: "15.31" }, { grade: "男乙", event: "100米", rank: "6", name: "吳珉慠", school: "台山陳元喜", result: "15.35" }, { grade: "男乙", event: "100米", rank: "7", name: "周立言", school: "培基", result: "15.502" }, { grade: "男乙", event: "100米", rank: "8", name: "黃世義", school: "沙循", result: "15.503" },
     { grade: "男乙", event: "200米", rank: "1", name: "彭哲仁", school: "培僑書院", result: "28.9" }, { grade: "男乙", event: "200米", rank: "2", name: "李勇培", school: "王賜豪", result: "29.69" }, { grade: "男乙", event: "200米", rank: "3", name: "朱政熙", school: "莊啟程", result: "30.69" }, { grade: "男乙", event: "200米", rank: "4", name: "李一夫", school: "浸大附小", result: "31.01" }, { grade: "男乙", event: "200米", rank: "5", name: "何善揚", school: "台山陳元喜", result: "31.17" }, { grade: "男乙", event: "200米", rank: "6", name: "郭皙珩", school: "朱正賢", result: "32.04" }, { grade: "男乙", event: "200米", rank: "7", name: "陳逸俊", school: "救田家炳", result: "32.23" }, { grade: "男乙", event: "200米", rank: "8", name: "盧俊熹", school: "沙田圍胡素貞", result: "32.5" },
@@ -259,13 +286,11 @@ const BUILT_IN_HISTORY = [
     { grade: "男乙", event: "擲壘球", rank: "1", name: "林雨晧", school: "浸大附小", result: "37.99米" }, { grade: "男乙", event: "擲壘球", rank: "2", name: "李勇培", school: "王賜豪", result: "37.51米" }, { grade: "男乙", event: "擲壘球", rank: "3", name: "黃頌軒", school: "蔡榮星", result: "33.64米" }, { grade: "男乙", event: "擲壘球", rank: "4", name: "黃光駿", school: "馬循", result: "31.41米" }, { grade: "男乙", event: "擲壘球", rank: "5", name: "張銘齊", school: "胡素貞", result: "30.12米" }, { grade: "男乙", event: "擲壘球", rank: "6", name: "韓子軒", school: "沙田圍胡素貞", result: "29.80米" }, { grade: "男乙", event: "擲壘球", rank: "7", name: "劉政杰", school: "美林", result: "29.76米" }, { grade: "男乙", event: "擲壘球", rank: "8", name: "魏思李", school: "馬主風", result: "29.13米" },
     { grade: "男乙", event: "接力", rank: "1", name: "王賜豪", school: "", result: "57.35*" }, { grade: "男乙", event: "接力", rank: "2", name: "培僑書院", school: "", result: "58.45" }, { grade: "男乙", event: "接力", rank: "3", name: "台山陳元喜", school: "", result: "58.54" }, { grade: "男乙", event: "接力", rank: "4", name: "朱正賢", school: "", result: "59.08" }, { grade: "男乙", event: "接力", rank: "5", name: "浸大附小", school: "", result: "59.42" }, { grade: "男乙", event: "接力", rank: "6", name: "救田家炳", school: "", result: "1:00.31" }, { grade: "男乙", event: "接力", rank: "7", name: "莊啟程", school: "", result: "1:01.63" }, { grade: "男乙", event: "接力", rank: "8", name: "沙呂小", school: "", result: "1:01.77" },
 
-    // ===== 男丙 =====
     { grade: "男丙", event: "60米", rank: "1", name: "朱柏陽", school: "沙小", result: "8.80*" }, { grade: "男丙", event: "60米", rank: "2", name: "邱梓傑", school: "莊啟程", result: "9.26" }, { grade: "男丙", event: "60米", rank: "3", name: "丘希朗", school: "浸大附小", result: "9.29" }, { grade: "男丙", event: "60米", rank: "4", name: "陳朗維", school: "浸大附小", result: "9.38" }, { grade: "男丙", event: "60米", rank: "5", name: "莫傲然", school: "沙呂小", result: "9.41" }, { grade: "男丙", event: "60米", rank: "6", name: "滕彬", school: "慈航", result: "9.42" }, { grade: "男丙", event: "60米", rank: "7", name: "張逸軒", school: "台山陳元喜", result: "9.43" }, { grade: "男丙", event: "60米", rank: "8", name: "黎俊晟", school: "培僑書院", result: "9.51" },
     { grade: "男丙", event: "100米", rank: "1", name: "呂旻擎", school: "雨川", result: "15.21" }, { grade: "男丙", event: "100米", rank: "2", name: "李宇澤", school: "莊啟程", result: "15.24" }, { grade: "男丙", event: "100米", rank: "3", name: "李俊軒", school: "靈糧", result: "15.3" }, { grade: "男丙", event: "100米", rank: "4", name: "楊子賢", school: "胡素貞", result: "15.59" }, { grade: "男丙", event: "100米", rank: "5", name: "鄺佑熹", school: "台山陳元喜", result: "15.65" }, { grade: "男丙", event: "100米", rank: "6", name: "陳健誠", school: "蔡榮星", result: "15.69" }, { grade: "男丙", event: "100米", rank: "7", name: "陳孝賢", school: "朱正賢", result: "15.76" }, { grade: "男丙", event: "100米", rank: "8", name: "黃文灝", school: "台山陳元喜", result: "15.92" },
     { grade: "男丙", event: "跳遠", rank: "1", name: "朱柏陽", school: "沙小", result: "4.29米*" }, { grade: "男丙", event: "跳遠", rank: "2", name: "楊子賢", school: "胡素貞", result: "3.71米" }, { grade: "男丙", event: "跳遠", rank: "3", name: "邱暐洛", school: "王賜豪", result: "3.71米" }, { grade: "男丙", event: "跳遠", rank: "4", name: "邱梓傑", school: "莊啟程", result: "3.66米" }, { grade: "男丙", event: "跳遠", rank: "5", name: "呂旻擎", school: "雨川", result: "3.66米" }, { grade: "男丙", event: "跳遠", rank: "6", name: "李俊軒", school: "靈糧", result: "3.60米" }, { grade: "男丙", event: "跳遠", rank: "7", name: "梅爾倫", school: "救田家炳", result: "3.55米" }, { grade: "男丙", event: "跳遠", rank: "8", name: "梁珀僖", school: "馬聖若瑟", result: "3.45米" },
     { grade: "男丙", event: "接力", rank: "1", name: "浸大附小", school: "", result: "1:00.06*" }, { grade: "男丙", event: "接力", rank: "2", name: "莊啟程", school: "", result: "1:01.13" }, { grade: "男丙", event: "接力", rank: "3", name: "台山陳元喜", school: "", result: "1:01.27" }, { grade: "男丙", event: "接力", rank: "4", name: "培僑書院", school: "", result: "1:01.72" }, { grade: "男丙", event: "接力", rank: "5", name: "蔡榮星", school: "", result: "1:03.27" }, { grade: "男丙", event: "接力", rank: "6", name: "雨川", school: "", result: "1:03.60" }, { grade: "男丙", event: "接力", rank: "7", name: "沙呂小", school: "", result: "1:03.91" }, { grade: "男丙", event: "接力", rank: "8", name: "王賜豪", school: "", result: "1:05.93" },
 
-    // ===== 女甲 =====
     { grade: "女甲", event: "60米", rank: "1", name: "曾詠嵐", school: "朱正賢", result: "8.43" }, { grade: "女甲", event: "60米", rank: "2", name: "高梓琳", school: "循理", result: "8.56" }, { grade: "女甲", event: "60米", rank: "3", name: "詹凱延", school: "救田家炳", result: "8.73" }, { grade: "女甲", event: "60米", rank: "4", name: "陈恬静", school: "馬聖若瑟", result: "8.91" }, { grade: "女甲", event: "60米", rank: "5", name: "呂澄萱", school: "培基", result: "8.99" }, { grade: "女甲", event: "60米", rank: "6", name: "藍芯蕎", school: "台山陳元喜", result: "9.15" }, { grade: "女甲", event: "60米", rank: "7", name: "馮晞瑩", school: "浸呂小", result: "9.26" }, { grade: "女甲", event: "60米", rank: "8", name: "陳彥希", school: "慈航", result: "9.32" },
     { grade: "女甲", event: "100米", rank: "1", name: "張芷瑞", school: "培僑書院", result: "13.72*" }, { grade: "女甲", event: "100米", rank: "2", name: "江伊嵐", school: "浸大附小", result: "14.11" }, { grade: "女甲", event: "100米", rank: "3", name: "楊嬉嬈", school: "胡素貞", result: "14.14" }, { grade: "女甲", event: "100米", rank: "4", name: "甘庭萱", school: "蔡榮星", result: "14.22" }, { grade: "女甲", event: "100米", rank: "5", name: "王之瞳", school: "浸大附小", result: "14.42" }, { grade: "女甲", event: "100米", rank: "6", name: "譚蘊芝", school: "台山陳元喜", result: "14.63" }, { grade: "女甲", event: "100米", rank: "7", name: "鄧海言", school: "循理", result: "14.81" }, { grade: "女甲", event: "100米", rank: "8", name: "劉芊汝", school: "朱正賢", result: "15.12" },
     { grade: "女甲", event: "200米", rank: "1", name: "張芯玥", school: "浸大附小", result: "28.52" }, { grade: "女甲", event: "200米", rank: "2", name: "羅沛恩", school: "台山陳元喜", result: "29.33" }, { grade: "女甲", event: "200米", rank: "3", name: "唐子琳", school: "禧年恩平", result: "30.42" }, { grade: "女甲", event: "200米", rank: "4", name: "楊可柔", school: "蕭漢森", result: "30.72" }, { grade: "女甲", event: "200米", rank: "5", name: "麥楚尉", school: "培僑書院", result: "31.15" }, { grade: "女甲", event: "200米", rank: "6", name: "林舒盈", school: "沙田圍胡素貞", result: "31.54" }, { grade: "女甲", event: "200米", rank: "7", name: "鄭悅恩", school: "莊啟程", result: "31.83" }, { grade: "女甲", event: "200米", rank: "8", name: "李紫悠", school: "救田家炳", result: "31.99" },
@@ -276,7 +301,6 @@ const BUILT_IN_HISTORY = [
     { grade: "女甲", event: "推鉛球", rank: "1", name: "何穎妮", school: "張煌偉", result: "7.02米" }, { grade: "女甲", event: "推鉛球", rank: "2", name: "陳可瀅", school: "台山陳元喜", result: "6.39米" }, { grade: "女甲", event: "推鉛球", rank: "3", name: "姜紫喬", school: "莊啟程", result: "6.14米" }, { grade: "女甲", event: "推鉛球", rank: "4", name: "劉柏慧", school: "救田家炳", result: "5.93米" }, { grade: "女甲", event: "推鉛球", rank: "5", name: "鄧曉鈺", school: "愛禮信", result: "5.84米" }, { grade: "女甲", event: "推鉛球", rank: "6", name: "周悦姸", school: "浸大附小", result: "5.78米" }, { grade: "女甲", event: "推鉛球", rank: "7", name: "吴卉铌", school: "純陽", result: "5.73米" }, { grade: "女甲", event: "推鉛球", rank: "8", name: "陳緲", school: "主風", result: "5.70米" },
     { grade: "女甲", event: "接力", rank: "1", name: "浸大附小", school: "", result: "56.72" }, { grade: "女甲", event: "接力", rank: "2", name: "朱正賢", school: "", result: "57.16" }, { grade: "女甲", event: "接力", rank: "3", name: "台山陳元喜", school: "", result: "57.27" }, { grade: "女甲", event: "接力", rank: "4", name: "培僑書院", school: "", result: "57.66" }, { grade: "女甲", event: "接力", rank: "5", name: "蔡榮星", school: "", result: "58.24" }, { grade: "女甲", event: "接力", rank: "6", name: "循理", school: "", result: "1:00.78" }, { grade: "女甲", event: "接力", rank: "7", name: "救田家炳", school: "", result: "1:00.98" }, { grade: "女甲", event: "接力", rank: "8", name: "蕭漢森", school: "", result: "1:01.32" },
 
-    // ===== 女乙 =====
     { grade: "女乙", event: "60米", rank: "1", name: "周雅緣", school: "蔡榮星", result: "9.03" }, { grade: "女乙", event: "60米", rank: "2", name: "黃晞僑", school: "沙崇", result: "9.28" }, { grade: "女乙", event: "60米", rank: "3", name: "楊凱淇", school: "慈航", result: "9.36" }, { grade: "女乙", event: "60米", rank: "4", name: "梁潁喬", school: "浸呂小", result: "9.38" }, { grade: "女乙", event: "60米", rank: "5", name: "彭可瀅", school: "救田家炳", result: "9.51" }, { grade: "女乙", event: "60米", rank: "6", name: "何欣儀", school: "朱正賢", result: "9.57" }, { grade: "女乙", event: "60米", rank: "7", name: "羅文君", school: "莊啟程", result: "9.62" }, { grade: "女乙", event: "60米", rank: "8", name: "林妍希", school: "主風", result: "9.69" },
     { grade: "女乙", event: "100米", rank: "1", name: "張日珈", school: "救田家炳", result: "14.52" }, { grade: "女乙", event: "100米", rank: "2", name: "温芷潼", school: "朱正賢", result: "14.63" }, { grade: "女乙", event: "100米", rank: "3", name: "廖小晶", school: "蔡榮星", result: "14.69" }, { grade: "女乙", event: "100米", rank: "4", name: "颜卡蜜拉", school: "莊啟程", result: "15.32" }, { grade: "女乙", event: "100米", rank: "5", name: "黃小漫", school: "培僑書院", result: "15.68" }, { grade: "女乙", event: "100米", rank: "6", name: "謝沛琪", school: "主風", result: "16.24" }, { grade: "女乙", event: "100米", rank: "7", name: "余日桐", school: "馬主風", result: "16.28" }, { grade: "女乙", event: "100米", rank: "8", name: "鍾沛希", school: "胡素貞", result: "16.38" },
     { grade: "女乙", event: "200米", rank: "1", name: "梁倩珩", school: "台山陳元喜", result: "29.45*" }, { grade: "女乙", event: "200米", rank: "2", name: "謝鎧晴", school: "沙呂小", result: "29.52*" }, { grade: "女乙", event: "200米", rank: "3", name: "何紀攸", school: "浸呂小", result: "31.53" }, { grade: "女乙", event: "200米", rank: "4", name: "劉玧利", school: "浸大附小", result: "31.76" }, { grade: "女乙", event: "200米", rank: "5", name: "勵彥君", school: "靈糧", result: "32.39" }, { grade: "女乙", event: "200米", rank: "6", name: "林欣", school: "沙呂小", result: "32.98" }, { grade: "女乙", event: "200米", rank: "7", name: "黃子晴", school: "莊啟程", result: "33.63" }, { grade: "女乙", event: "200米", rank: "8", name: "高星惠", school: "蔡榮星", result: "33.8" },
@@ -285,7 +309,6 @@ const BUILT_IN_HISTORY = [
     { grade: "女乙", event: "擲壘球", rank: "1", name: "林緻晴", school: "沙呂小", result: "30.01米" }, { grade: "女乙", event: "擲壘球", rank: "2", name: "方婧潼", school: "王賜豪", result: "26.68米" }, { grade: "女乙", event: "擲壘球", rank: "3", name: "韓凱晴", school: "浸呂小", result: "26.54米" }, { grade: "女乙", event: "擲壘球", rank: "4", name: "陳嘉琳", school: "禾輋信義", result: "26.37米" }, { grade: "女乙", event: "擲壘球", rank: "5", name: "林希澄", school: "台山陳元喜", result: "24.90米" }, { grade: "女乙", event: "擲壘球", rank: "6", name: "王玅詩", school: "無玷聖心", result: "24.17米" }, { grade: "女乙", event: "擲壘球", rank: "7", name: "高悦晗", school: "培僑書院", result: "23.51米" }, { grade: "女乙", event: "擲壘球", rank: "8", name: "鄭祉瑜", school: "純陽", result: "22.63米" },
     { grade: "女乙", event: "接力", rank: "1", name: "救田家炳", school: "", result: "1:00.73" }, { grade: "女乙", event: "接力", rank: "2", name: "蔡榮星", school: "", result: "1:01.12" }, { grade: "女乙", event: "接力", rank: "3", name: "朱正賢", school: "", result: "1:01.18" }, { grade: "女乙", event: "接力", rank: "4", name: "沙呂小", school: "", result: "1:01.57" }, { grade: "女乙", event: "接力", rank: "5", name: "台山陳元喜", school: "", result: "1:01.85" }, { grade: "女乙", event: "接力", rank: "6", name: "胡素貞", school: "", result: "1:02.76" }, { grade: "女乙", event: "接力", rank: "7", name: "莊啟程", school: "", result: "1:02.78" }, { grade: "女乙", event: "接力", rank: "8", name: "浸呂小", school: "", result: "1:03.18" },
 
-    // ===== 女丙 =====
     { grade: "女丙", event: "60米", rank: "1", name: "張芊蔚", school: "培僑書院", result: "9.32" }, { grade: "女丙", event: "60米", rank: "2", name: "陳鎧琳", school: "靈糧", result: "9.38" }, { grade: "女丙", event: "60米", rank: "3", name: "梁熙瑜", school: "救田家炳", result: "9.54" }, { grade: "女丙", event: "60米", rank: "4", name: "陳晞藍", school: "沙呂小", result: "9.76" }, { grade: "女丙", event: "60米", rank: "5", name: "霍可欣", school: "台山陳元喜", result: "9.78" }, { grade: "女丙", event: "60米", rank: "6", name: "朱梓童", school: "沙田圍胡素貞", result: "9.89" }, { grade: "女丙", event: "60米", rank: "7", name: "區僖璇", school: "浸大附小", result: "9.98" }, { grade: "女丙", event: "60米", rank: "8", name: "呂芊玥", school: "朱正賢", result: "10.19" },
     { grade: "女丙", event: "100米", rank: "1", name: "劉一言", school: "培僑書院", result: "15.35" }, { grade: "女丙", event: "100米", rank: "2", name: "李誦恩", school: "沙呂小", result: "15.38" }, { grade: "女丙", event: "100米", rank: "3", name: "黃可僑", school: "沙崇", result: "15.73" }, { grade: "女丙", event: "100米", rank: "4", name: "施向嵐", school: "台山陳元喜", result: "15.87" }, { grade: "女丙", event: "100米", rank: "5", name: "曾梓柔", school: "靈糧", result: "16.01" }, { grade: "女丙", event: "100米", rank: "6", name: "麥苡筠", school: "救田家炳", result: "16.06" }, { grade: "女丙", event: "100米", rank: "7", name: "黎子妤", school: "沙呂小", result: "16.19" }, { grade: "女丙", event: "100米", rank: "8", name: "曾奕褕", school: "胡素貞", result: "16.49" },
     { grade: "女丙", event: "跳遠", rank: "1", name: "黎子妤", school: "沙呂小", result: "3.77米" }, { grade: "女丙", event: "跳遠", rank: "2", name: "張芊蔚", school: "培僑書院", result: "3.75米" }, { grade: "女丙", event: "跳遠", rank: "3", name: "孫子箖", school: "雨川", result: "3.49米" }, { grade: "女丙", event: "跳遠", rank: "4", name: "彭詠妍", school: "蔡榮星", result: "3.22米" }, { grade: "女丙", event: "跳遠", rank: "5", name: "朱梓童", school: "沙田圍胡素貞", result: "3.15米" }, { grade: "女丙", event: "跳遠", rank: "6", name: "曾奕褕", school: "胡素貞", result: "3.14米" }, { grade: "女丙", event: "跳遠", rank: "7", name: "鄭心悅", school: "蕭漢森", result: "3.12米" }, { grade: "女丙", event: "跳遠", rank: "8", name: "曾梓柔", school: "靈糧", result: "3.08米" },
@@ -298,6 +321,8 @@ if (!students || students.length < 50) students = CORE_STUDENTS;
 
 let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
 let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
+let squadScores = JSON.parse(localStorage.getItem('ckc_sq_scores_v35')) || {}; // 新增：即時計分儲存空間
+
 let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || {
     plk: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
     shatin: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"跳高":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
@@ -326,11 +351,14 @@ window.onload = () => {
 };
 
 function refreshUI() { updateResNames(); renderRecords(); renderStudentAdmin(); renderSquadBoard(); renderHistoryTable(); }
+
+// 儲存所有資料 (包含新的計分)
 function saveAll() {
     localStorage.setItem('ckc_stu_v26', JSON.stringify(students));
     localStorage.setItem('ckc_rec_v26', JSON.stringify(records));
     localStorage.setItem('ckc_sq_v26', JSON.stringify(squads));
     localStorage.setItem('ckckt_cfg_v26', JSON.stringify(squadConfig));
+    localStorage.setItem('ckc_sq_scores_v35', JSON.stringify(squadScores)); // 儲存分數
 }
 
 // 歷屆成績顯示
@@ -391,13 +419,11 @@ function updateAnalysis() {
     });
 }
 
-// 💣 拆除 Safari 專屬地雷：不用 global event 來切換分頁
 function switchTab(id) { 
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); 
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
     document.getElementById(id).classList.add('active'); 
     
-    // 安全寫法：找尋帶有這個 id 的 onclick 屬性的按鈕來亮起，完全避開 Safari 禁忌的 global event
     document.querySelectorAll('.tab-btn').forEach(b => {
         if(b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) {
             b.classList.add('active');
@@ -420,6 +446,8 @@ function deleteConfigEvent() {
     const evName = document.getElementById('cfgEventName').value.trim();
     if(squadConfig[comp][gKey] && squadConfig[comp][gKey][evName]) { delete squadConfig[comp][gKey][evName]; saveAll(); renderSquadBoard(); }
 }
+
+// 渲染排陣板 (同時觸發渲染計分板)
 function renderSquadBoard() {
     const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value;
     const gender = gKey.startsWith('F') ? 'F' : 'M', grade = gKey.replace('F', '');
@@ -434,7 +462,74 @@ function renderSquadBoard() {
         }
         board.innerHTML += `<div class="event-slot-card"><span class="slot-title">${ev} (${count}名)</span>${pills}</div>`;
     });
+    
+    // 同步渲染計分板
+    renderScoreBoard();
 }
+
+// === 新增：渲染即時計分板 ===
+function renderScoreBoard() {
+    const comp = document.getElementById('sqComp').value;
+    const gKey = document.getElementById('sqGrade').value;
+    const grade = gKey.replace('F', '');
+    const tbody = document.getElementById('scoreTableBody');
+    const container = document.getElementById('scoreBoardContainer');
+    tbody.innerHTML = "";
+    
+    const qSet = (squadConfig[comp] && squadConfig[comp][grade]) ? squadConfig[comp][grade] : {};
+    let hasItems = false;
+
+    Object.keys(qSet).forEach(ev => {
+        const count = qSet[ev];
+        const key = `${comp}_${gKey}_${ev}`;
+        const names = squads[key] || [];
+        const scores = squadScores[key] || [];
+        
+        for(let i=0; i<count; i++) {
+            hasItems = true;
+            const n = names[i] || "待選擇";
+            // 取出之前儲存的分數，如果沒有則顯示空白
+            const score = scores[i] !== undefined && scores[i] !== null ? scores[i] : "";
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight:bold;">${ev}</td>
+                    <td><input type="text" value="${n}" disabled style="background:#f4f7f6; border:1px solid #ddd; padding:6px; color:#555;"></td>
+                    <td><input type="number" class="score-input" value="${score}" min="0" oninput="updateScore('${key}', ${i}, this.value)"></td>
+                </tr>
+            `;
+        }
+    });
+    
+    if(hasItems) {
+        container.style.display = "block";
+        calculateTotal(); // 載入時先算一次總分
+    } else {
+        container.style.display = "none";
+    }
+}
+
+// === 新增：即時更新分數並儲存 ===
+function updateScore(key, idx, val) {
+    if(!squadScores[key]) squadScores[key] = [];
+    squadScores[key][idx] = parseFloat(val);
+    if(val === "") squadScores[key][idx] = null; // 如果清空則設為 null
+    saveAll(); // 立即儲存至 localStorage
+    calculateTotal(); // 更新總分顯示
+}
+
+// === 新增：即時計算畫面上的總分 ===
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.score-input').forEach(input => {
+        const score = parseFloat(input.value);
+        if (!isNaN(score)) {
+            total += score;
+        }
+    });
+    document.getElementById('total-score').innerText = total;
+}
+
 function getGradeByYear(y) { const age = 2026 - y; return age >= 11 ? 'A' : age === 10 ? 'B' : age === 9 ? 'C' : 'D'; }
 function canJoin(y, target) { const order = {'D':1,'C':2,'B':3,'A':4}; return order[target] >= order[getGradeByYear(y)]; }
 function openPicker(key, idx, g, tg) { activeSlot = {key, idx, g, tg}; document.getElementById('pickerModal').style.display="flex"; filterPickerList(); }
