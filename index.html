@@ -1,1051 +1,350 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V37 (展開版)</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* 定義系統主色調變數 */
-        :root { 
-            --plk-blue: #1a73e8; 
-            --plk-red: #ea4335; 
-            --plk-green: #27ae60; 
-            --plk-gold: #f39c12; 
-            --plk-dark: #34495e; 
-            --plk-light: #f8f9fa; 
-        }
-
-        /* 基礎佈局 */
-        body { 
-            font-family: "Microsoft JhengHei", sans-serif; 
-            max-width: 1300px; 
-            margin: 0 auto; 
-            padding: 10px; 
-            background-color: #f0f2f5; 
-            color: #333; 
-        }
-
-        h1 { 
-            color: var(--plk-blue); 
-            text-align: center; 
-            font-size: 1.5rem; 
-            margin-bottom: 15px; 
-        }
-
-        /* 卡片設計 */
-        .card { 
-            background: white; 
-            padding: 18px; 
-            border-radius: 12px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-            margin-bottom: 15px; 
-        }
-        
-        /* 標籤分頁設計 */
-        .tabs { 
-            display: flex; 
-            overflow-x: auto; 
-            gap: 5px; 
-            margin-bottom: 15px; 
-            padding-bottom: 5px; 
-            border-bottom: 2px solid #ddd; 
-        }
-
-        .tab-btn { 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 10px 10px 0 0; 
-            cursor: pointer; 
-            background: #eee; 
-            font-weight: bold; 
-            white-space: nowrap; 
-            transition: 0.3s; 
-        }
-
-        .tab-btn.active { 
-            background: var(--plk-blue); 
-            color: white; 
-        }
-
-        .tab-content { 
-            display: none; 
-        }
-
-        .tab-content.active { 
-            display: block; 
-        }
-
-        /* 網格與表單元素 */
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 10px; 
-        }
-
-        select, input { 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            border-radius: 8px; 
-            width: 100%; 
-            font-size: 1rem; 
-            box-sizing: border-box; 
-        }
-
-        /* 按鈕設計 */
-        .btn { 
-            padding: 10px 15px; 
-            border-radius: 8px; 
-            border: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-            transition: 0.2s; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 5px; 
-            font-size: 0.9rem; 
-        }
-
-        .btn-blue { background: var(--plk-blue); color: white; }
-        .btn-green { background: var(--plk-green); color: white; }
-        .btn-red { background: var(--plk-red); color: white; }
-        .btn-orange { background: var(--plk-gold); color: white; }
-        .btn-dark { background: var(--plk-dark); color: white; }
-
-        /* 表格設計 */
-        .table-wrapper { 
-            max-height: 550px; 
-            overflow-y: auto; 
-            border: 1px solid #eee; 
-            border-radius: 8px; 
-            margin-top: 10px; 
-        }
-
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            background: white; 
-            font-size: 0.9rem; 
-        }
-
-        th, td { 
-            border: 1px solid #eee; 
-            padding: 10px; 
-            text-align: left; 
-        }
-
-        th { 
-            background: #f4f7f6; 
-            position: sticky; 
-            top: 0; 
-            z-index: 10; 
-        }
-
-        tr:nth-child(even) { 
-            background-color: #fafafa; 
-        }
-        
-        .record-badge { 
-            display: inline-block; 
-            background: var(--plk-gold); 
-            color: white; 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            font-size: 0.75rem; 
-            margin-left: 5px; 
-            font-weight: bold;
-        }
-
-        /* 排陣管理設計 */
-        .squad-container { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 15px; 
-            margin-top: 15px; 
-        }
-
-        .event-slot-card { 
-            border-left: 5px solid var(--plk-blue); 
-            background: #f9f9f9; 
-            padding: 12px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-        }
-
-        .slot-title { 
-            font-weight: bold; 
-            margin-bottom: 8px; 
-            color: var(--plk-dark); 
-            display: block; 
-        }
-
-        .slot-pill { 
-            display: inline-block; 
-            background: #fff; 
-            border: 1px dashed #aaa; 
-            padding: 6px 12px; 
-            margin: 4px; 
-            border-radius: 6px; 
-            font-size: 0.85rem; 
-            cursor: pointer; 
-            transition: 0.2s; 
-        }
-
-        .slot-pill:hover { 
-            border-color: var(--plk-blue); 
-            background: #f0f7ff; 
-        }
-
-        .slot-filled { 
-            border-style: solid; 
-            background: #e8f0fe; 
-            color: #1967d2; 
-            border-color: var(--plk-blue); 
-            font-weight: bold; 
-        }
-
-        .config-panel { 
-            background: #fff3e0; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            border: 1px solid #ffe0b2; 
-        }
-
-        /* 浮動視窗 (Modal) 設計 */
-        #pickerModal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.7); 
-            z-index: 2000; 
-            justify-content: center; 
-            align-items: center; 
-        }
-
-        .picker-content { 
-            background: white; 
-            width: 90%; 
-            max-width: 450px; 
-            padding: 20px; 
-            border-radius: 15px; 
-            max-height: 80vh; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        .picker-list { 
-            overflow-y: auto; 
-            flex-grow: 1; 
-            margin: 15px 0; 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 8px; 
-        }
-
-        /* 列印樣式 */
-        @media print { 
-            .no-print { display: none !important; } 
-            table { border: 1px solid #000; } 
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLKCKT 田徑隊管理系統 V37 (展開版)</title>
+<style>
+  :root { 
+    --primary: #004d99; 
+    --bg: #f4f7f6; 
+    --text: #333; 
+    --border: #ddd; 
+  }
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+    padding: 20px; 
+    line-height: 1.5; 
+  }
+  .plkckt-container { 
+    max-width: 1000px; 
+    margin: auto; 
+    background: #fff; 
+    padding: 30px; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+  }
+  h1 { 
+    text-align: center; 
+    color: var(--primary); 
+    margin-bottom: 30px; 
+    border-bottom: 3px solid var(--primary); 
+    padding-bottom: 10px; 
+  }
+  h2 { 
+    color: #fff; 
+    background: var(--primary); 
+    padding: 12px 20px; 
+    border-radius: 6px; 
+    margin-top: 40px; 
+    font-size: 1.3em; 
+  }
+  details { 
+    margin-bottom: 15px; 
+    border: 1px solid var(--border); 
+    border-radius: 6px; 
+    overflow: hidden; 
+  }
+  summary { 
+    background: #eef2f5; 
+    padding: 12px 20px; 
+    font-weight: bold; 
+    font-size: 1.1em; 
+    color: var(--primary); 
+    cursor: pointer; 
+    outline: none; 
+  }
+  summary:hover { background: #e1e8ed; }
+  .division-content { 
+    padding: 20px; 
+    background: #fafbfc; 
+  }
+  h4 { 
+    color: #2c3e50; 
+    border-left: 4px solid #e74c3c; 
+    padding-left: 10px; 
+    margin: 20px 0 10px 0; 
+    font-size: 1.05em; 
+    background: #fceceb; 
+    padding: 8px 10px; 
+    border-radius: 0 4px 4px 0; 
+  }
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 15px; 
+    font-size: 0.95em; 
+    background: #fff; 
+  }
+  th, td { 
+    padding: 8px 12px; 
+    border: 1px solid var(--border); 
+    text-align: left; 
+  }
+  th { 
+    background: #f8f9fa; 
+    font-weight: bold; 
+    color: #555; 
+  }
+  tr:nth-child(even) { background: #fdfdfd; }
+  tr:hover { background: #f1f5f9; }
+  .rec { 
+    color: #e74c3c; 
+    font-weight: bold; 
+  }
+  .rank { 
+    text-align: center; 
+    width: 60px; 
+    font-weight: bold; 
+    color: #666; 
+  }
+</style>
 </head>
 <body>
+<div class="plkckt-container">
+  <h1>PLKCKT 田徑隊管理系統 V37 <span style="font-size: 0.6em; color: #7f8c8d;">(展開版)</span></h1>
 
-<div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V37</h1>
+  <div class="competition">
+    <h2>2025-2026 年度沙田區小學校際田徑比賽</h2>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
-        <button class="tab-btn" onclick="switchTab('analysis')">📈 數據分析</button>
-        <button class="tab-btn" onclick="switchTab('squad')">🏃 排陣管理</button>
-        <button class="tab-btn" onclick="switchTab('history')">🏆 歷屆成績</button>
-        <button class="tab-btn" onclick="switchTab('students')">👥 學生名單</button>
-    </div>
+    <details open>
+      <summary>男子甲組</summary>
+      <div class="division-content">
+        <h4>60米 (大會紀錄：8.21)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>楊鴻軒 (蕭漢森)</td><td class="rec">7.88*</td></tr>
+          <tr><td class="rank">2</td><td>陳建璇 (泰伯)</td><td>8.41</td></tr>
+          <tr><td class="rank">3</td><td>戚錦森 (慈航)</td><td>8.455</td></tr>
+          <tr><td class="rank">4</td><td>刘尚奇 (莊啟程)</td><td>8.457</td></tr>
+          <tr><td class="rank">5</td><td>周諺泓 (靈糧)</td><td>8.49</td></tr>
+          <tr><td class="rank">6</td><td>張俊然 (台山陳元喜)</td><td>8.55</td></tr>
+          <tr><td class="rank">7</td><td>樊浠睿 (慈航)</td><td>8.77</td></tr>
+          <tr><td class="rank">8</td><td>倫睿言 (沙呂小)</td><td>8.84</td></tr>
+        </table>
 
-    <div id="results" class="tab-content active">
-        <div class="card" id="editFormSection">
-            <h3 id="formTitle">📍 錄入新成績</h3>
-            <input type="hidden" id="editModeId" value="">
-            <div class="grid">
-                <input type="text" id="resCompName" placeholder="比賽名稱">
-                <input type="date" id="resDate">
-                <select id="resYear" class="year-select" onchange="updateResNames()"></select>
-                <select id="resGender" onchange="updateResNames()">
-                    <option value="M">男 (M)</option>
-                    <option value="F">女 (F)</option>
-                </select>
-                <select id="resName"></select>
-            </div>
-            <div class="grid" style="margin-top:10px;">
-                <select id="resEvent"></select>
-                <input type="number" id="resVal" step="0.001" placeholder="成績 (秒/米)">
-                <input type="text" id="resAward" placeholder="備註">
-                <button id="saveBtn" class="btn btn-blue" onclick="saveRecord()">💾 儲存數據</button>
-                <button id="cancelBtn" class="btn btn-dark" style="display:none;" onclick="cancelEdit()">取消修改</button>
-            </div>
-        </div>
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>📜 歷史紀錄</h3>
-                <div>
-                    <button class="btn btn-green" onclick="exportToExcel()">📤 匯出 Excel</button>
-                    <button class="btn btn-dark" onclick="document.getElementById('importFile').click()">📥 匯入數據</button>
-                    <input type="file" id="importFile" style="display:none" accept=".xlsx" onchange="importFromExcel(event)">
-                </div>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr><th>日期</th><th>姓名</th><th>項目</th><th>成績</th><th>比賽</th><th>操作</th></tr>
-                    </thead>
-                    <tbody id="recordListArea"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+        <h4>100米 (大會紀錄：12.64)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>高偉軒 (慈航)</td><td>13.05</td></tr>
+          <tr><td class="rank">2</td><td>阮靖曦 (沙呂小)</td><td>13.18</td></tr>
+          <tr><td class="rank">3</td><td>李文灝 (王賜豪)</td><td>13.34</td></tr>
+          <tr><td class="rank">4</td><td>簡梓軒 (慈航)</td><td>13.39</td></tr>
+          <tr><td class="rank">5</td><td>施醇澧 (靈糧)</td><td>13.95</td></tr>
+          <tr><td class="rank">6</td><td>葉軒成 (沙官)</td><td>14.17</td></tr>
+          <tr><td class="rank">7</td><td>陳梓燊 (馬主風)</td><td>14.23</td></tr>
+          <tr><td class="rank">8</td><td>吳一航 (沙田圍胡素貞)</td><td>14.29</td></tr>
+        </table>
 
-    <div id="history" class="tab-content">
-        <div class="card">
-            <h3>🏆 歷屆各項前八名參考數據</h3>
-            <div class="grid" style="margin-top:15px; grid-template-columns: 1fr 1fr 1fr;">
-                <select id="histComp" onchange="renderHistoryTable()" style="border-color: var(--plk-blue); font-weight:bold; color:var(--plk-blue);">
-                    <option value="shatin">🏅 沙田區小學田徑比賽</option>
-                    <option value="plk">🏅 保良局全港小學賽</option>
-                    <option value="five">🏅 保良局五校田徑賽</option>
-                </select>
-                <select id="histGrade" onchange="renderHistoryTable()">
-                    <option value="男甲">男子甲組</option>
-                    <option value="男乙">男子乙組</option>
-                    <option value="男丙">男子丙組</option>
-                    <option value="男丁">男子丁組 (五校)</option>
-                    <option value="女甲">女子甲組</option>
-                    <option value="女乙">女子乙組</option>
-                    <option value="女丙">女子丙組</option>
-                    <option value="女丁">女子丁組 (五校)</option>
-                </select>
-                <select id="histEvent" onchange="renderHistoryTable()">
-                    <option value="all">-- 顯示全部項目 --</option>
-                    <option value="60米">60米</option>
-                    <option value="100米">100米</option>
-                    <option value="200米">200米</option>
-                    <option value="400米">400米</option>
-                    <option value="跳高">跳高</option>
-                    <option value="跳遠">跳遠</option>
-                    <option value="擲壘球">擲壘球</option>
-                    <option value="推鉛球">推鉛球</option>
-                    <option value="接力">4x100米接力</option>
-                </select>
-            </div>
-            <p id="recordNote" style="font-size:0.85rem; color:#666; margin-top:10px;"></p>
-            <div class="table-wrapper">
-                <table id="historyTable">
-                    <thead>
-                        <tr><th>項目</th><th>名次</th><th>姓名</th><th>學校</th><th>成績</th></tr>
-                    </thead>
-                    <tbody id="historyArea"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+        <h4>200米 (大會紀錄：27.43)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>文宥鈞 (台山陳元喜)</td><td class="rec">25.92*</td></tr>
+          <tr><td class="rank">2</td><td>劉逸深 (主風)</td><td class="rec">26.53*</td></tr>
+          <tr><td class="rank">3</td><td>吳灝霖 (聖華)</td><td>28.53</td></tr>
+          <tr><td class="rank">4</td><td>吳承臻 (台山陳元喜)</td><td>28.93</td></tr>
+          <tr><td class="rank">5</td><td>馬德晉 (沙循)</td><td>28.97</td></tr>
+          <tr><td class="rank">6</td><td>楊洛誠 (愛禮信)</td><td>29.19</td></tr>
+          <tr><td class="rank">7</td><td>林東 (雨川)</td><td>29.71</td></tr>
+          <tr><td class="rank">8</td><td>李東臨 (浸呂小)</td><td>30.09</td></tr>
+        </table>
 
-    <div id="analysis" class="tab-content">
-        <div class="card">
-            <div class="grid">
-                <select id="chartYear" class="year-select" onchange="updateAnalysis()"></select>
-                <select id="chartGender" onchange="updateAnalysis()">
-                    <option value="M">男</option>
-                    <option value="F">女</option>
-                </select>
-                <select id="chartEvent" onchange="updateAnalysis()"></select>
-            </div>
-            <div style="height:350px; margin-top:15px;">
-                <canvas id="compareChart"></canvas>
-            </div>
-        </div>
-        <div class="card top5-badge">
-            <h3 style="margin-top:0; color: var(--plk-gold);">🏆 項目歷史五強</h3>
-            <table id="top5Table">
-                <thead>
-                    <tr><th>排名</th><th>姓名</th><th>成績</th><th>比賽</th><th>日期</th></tr>
-                </thead>
-                <tbody id="top5Area"></tbody>
-            </table>
-        </div>
-    </div>
+        <h4>400米 (大會紀錄：1:04.13)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>區煒楠 (馬主風)</td><td class="rec">1:02.55*</td></tr>
+          <tr><td class="rank">2</td><td>李泓澔 (蔡榮星)</td><td>1:05.53</td></tr>
+          <tr><td class="rank">3</td><td>蔡晉紳 (蔡榮星)</td><td>1:06.23</td></tr>
+          <tr><td class="rank">4</td><td>陳睿豐 (沙官)</td><td>1:08.01</td></tr>
+          <tr><td class="rank">5</td><td>陳思鳴 (浸大附小)</td><td>1:08.36</td></tr>
+          <tr><td class="rank">6</td><td>林恩樂 (沙呂小)</td><td>1:08.46</td></tr>
+          <tr><td class="rank">7</td><td>譚哲昂 (台山陳元喜)</td><td>1:08.77</td></tr>
+          <tr><td class="rank">8</td><td>陳浩俊 (張煊昌)</td><td>1:10.50</td></tr>
+        </table>
 
-    <div id="squad" class="tab-content">
-        <div class="card">
-            <div class="grid">
-                <select id="sqComp" onchange="renderSquadBoard()">
-                    <option value="plk">（保良局）全港小學賽</option>
-                    <option value="shatin">（學界）沙田小學賽</option>
-                    <option value="five">（五校）沙田屬下小學賽</option>
-                </select>
-                <select id="sqGrade" onchange="renderSquadBoard()">
-                    <option value="A">男甲</option><option value="FA">女甲</option>
-                    <option value="B">男乙</option><option value="FB">女乙</option>
-                    <option value="C">男丙</option><option value="FC">女丙</option>
-                    <option value="D">男丁 (五校)</option><option value="FD">女丁 (五校)</option>
-                </select>
-                <button class="btn btn-orange" onclick="toggleConfigPanel()">⚙️ 編輯項目與名額</button>
-                <button class="btn btn-dark" onclick="window.print()">🖨️ 列印名單</button>
-            </div>
-            <div id="configPanel" class="config-panel" style="display:none; margin-top:15px;">
-                <h4>⚙️ 編輯當前組別項目及名額</h4>
-                <div class="grid" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
-                    <input type="text" id="cfgEventName" placeholder="項目名稱 (如: 60m)">
-                    <input type="number" id="cfgQuota" placeholder="名額" min="1">
-                    <button class="btn btn-green" onclick="addOrUpdateConfig()">新增/更新</button>
-                    <button class="btn btn-red" onclick="deleteConfigEvent()">刪除項目</button>
-                </div>
-            </div>
-            <div id="squadBoard" class="squad-container"></div>
-        </div>
-    </div>
+        <h4>跳高 (大會紀錄：1.48米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>樊浠睿 (慈航)</td><td>1.40米</td></tr>
+          <tr><td class="rank">2</td><td>馬德晉 (沙循)</td><td>1.35米</td></tr>
+          <tr><td class="rank">3</td><td>陳柏熹 (浸大附小)</td><td>1.35米</td></tr>
+          <tr><td class="rank">4</td><td>陳梓燊 (馬主風)</td><td>1.30米</td></tr>
+          <tr><td class="rank">5</td><td>陳睿豐 (沙官)</td><td>1.30米</td></tr>
+          <tr><td class="rank">6</td><td>馮嘉軒 (主風)</td><td>1.25米</td></tr>
+          <tr><td class="rank">7</td><td>吳一航 (沙田圍胡素貞) / 吳承臻 (台山陳元喜) / 戴壹進 (靈糧)</td><td>1.20米</td></tr>
+          <tr><td class="rank">8</td><td>從缺</td><td>-</td></tr>
+        </table>
 
-    <div id="students" class="tab-content">
-        <div class="card">
-            <h3>👥 隊員增刪</h3>
-            <div class="grid">
-                <input type="text" id="newStuName" placeholder="姓名">
-                <select id="newStuYear" class="year-select"></select>
-                <select id="newStuGender">
-                    <option value="M">男</option>
-                    <option value="F">女</option>
-                </select>
-                <button class="btn btn-green" onclick="addNewStudent()">➕ 加入名單</button>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr><th>姓名</th><th>出生年份</th><th>性別</th><th>目前組別</th><th>操作</th></tr>
-                    </thead>
-                    <tbody id="stuListArea"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+        <h4>跳遠 (大會紀錄：5.08米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>區煒楠 (馬主風)</td><td>4.54米</td></tr>
+          <tr><td class="rank">2</td><td>簡梓軒 (慈航)</td><td>4.46米</td></tr>
+          <tr><td class="rank">3</td><td>李泓澔 (蔡榮星)</td><td>4.36米</td></tr>
+          <tr><td class="rank">4</td><td>林東 (雨川)</td><td>4.15米</td></tr>
+          <tr><td class="rank">5</td><td>張俊然 (台山陳元喜)</td><td>4.04米</td></tr>
+          <tr><td class="rank">6</td><td>高嘉壕 (張煌偉)</td><td>4.03米</td></tr>
+          <tr><td class="rank">7</td><td>徐振然 (沙田圍胡素貞)</td><td>4.01米</td></tr>
+          <tr><td class="rank">8</td><td>陳浩俊 (張煊昌)</td><td>3.93米</td></tr>
+        </table>
 
-<div id="pickerModal">
-    <div class="picker-content">
-        <h3 id="pickerTitle">選擇運動員</h3>
-        <input type="text" id="pickerSearch" placeholder="🔍 搜尋姓名..." oninput="filterPickerList()">
-        <div id="pickerList" class="picker-list"></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn btn-red" style="flex:1" onclick="selectAthlete('')">❌ 清除位置</button>
-            <button class="btn btn-dark" style="flex:1" onclick="closePicker()">關閉</button>
-        </div>
-    </div>
-</div>
+        <h4>擲壘球 (大會紀錄：54.13米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>李浩然 (培僑書院)</td><td>47.32米</td></tr>
+          <tr><td class="rank">2</td><td>李承禧 (胡素貞)</td><td>42.72米</td></tr>
+          <tr><td class="rank">3</td><td>關文皓 (純陽)</td><td>39.13米</td></tr>
+          <tr><td class="rank">4</td><td>吳珀賢 (王賜豪)</td><td>38.96米</td></tr>
+          <tr><td class="rank">5</td><td>麥恩諾 (馬主風)</td><td>38.74米</td></tr>
+          <tr><td class="rank">6</td><td>鍾牧泓 (沙呂小)</td><td>37.33米</td></tr>
+          <tr><td class="rank">7</td><td>盧思衡 (泰伯)</td><td>37.19米</td></tr>
+          <tr><td class="rank">8</td><td>崔子進 (張煊昌)</td><td>36.41米</td></tr>
+        </table>
 
-<script>
-// 1. 核心學生名單 (因為名單過長，這裡保持單行物件格式以方便複製貼上)
-const CORE_STUDENTS = [
-    {n:"朱政熙",y:2015,g:"M"},{n:"陳浩霆",y:2015,g:"M"},{n:"黃樂童",y:2015,g:"M"},{n:"林俊宇",y:2015,g:"M"},{n:"鄭悅朗",y:2015,g:"M"},{n:"梁匡茗",y:2015,g:"M"},{n:"劉凱諾",y:2015,g:"M"},{n:"陳楷洋",y:2015,g:"M"},{n:"鍾政言",y:2015,g:"M"},{n:"李泓正",y:2015,g:"M"},{n:"張焯珽",y:2015,g:"M"},{n:"黃日希",y:2015,g:"M"},
-    {n:"黃子晴",y:2015,g:"F"},{n:"羅文君",y:2015,g:"F"},{n:"譚念珈",y:2015,g:"F"},{n:"許芯語",y:2015,g:"F"},{n:"施驊倩",y:2015,g:"F"},{n:"黃鈺瞳",y:2015,g:"F"},{n:"曾釨渘",y:2015,g:"F"},{n:"王恩烯",y:2015,g:"F"},{n:"彭乙晴",y:2015,g:"F"},{n:"顏卡蜜拉",y:2015,g:"F"},
-    {n:"沈卓諾",y:2016,g:"M"},{n:"邱梓傑",y:2016,g:"M"},{n:"劉緻彥",y:2016,g:"M"},{n:"李宇澤",y:2016,g:"M"},{n:"黃柏禧",y:2016,g:"M"},{n:"陳灝軒",y:2016,g:"M"},{n:"黃梓澧",y:2016,g:"M"},{n:"岳青辰",y:2016,g:"M"},{n:"周駿熹",y:2016,g:"M"},{n:"劉君浩",y:2016,g:"M"},{n:"梁宇翹",y:2016,g:"M"},{n:"黃梓浩",y:2016,g:"M"},
-    {n:"朱兆然",y:2016,g:"F"},{n:"張穎忻",y:2016,g:"F"},{n:"陳曉澄",y:2016,g:"F"},{n:"伍熹榆",y:2016,g:"F"},{n:"黃藝之",y:2016,g:"F"},{n:"高梓翹",y:2016,g:"F"},{n:"薛雨菲",y:2016,g:"F"},{n:"葉希嵐",y:2016,g:"F"},{n:"張懷瑾",y:2016,g:"F"},{n:"張懷蔚",y:2016,g:"F"},{n:"楊倬欣",y:2016,g:"F"},{n:"陳詩晴",y:2016,g:"F"},{n:"丘倩柔",y:2016,g:"F"},
-    {n:"羅啟鋒",y:2017,g:"M"},{n:"梁匡毅",y:2017,g:"M"},{n:"郭俊希",y:2017,g:"M"},{n:"盧鍵霆",y:2017,g:"M"},{n:"江柏昊",y:2017,g:"M"},{n:"鄧萃藍",y:2017,g:"M"},{n:"黃星澧",y:2017,g:"M"},{n:"彭子恪",y:2017,g:"M"},{n:"余卓謙",y:2017,g:"M"},{n:"劉栢熹",y:2017,g:"M"},{n:"胡梓賢",y:2017,g:"M"},{n:"麥風",y:2017,g:"M"},{n:"楊少琪",y:2017,g:"M"},{n:"徐梓程",y:2017,g:"M"},{n:"余焌達",y:2017,g:"M"},
-    {n:"陳諾彤",y:2017,g:"F"},{n:"李思穎",y:2017,g:"F"},{n:"袁煜婷",y:2017,g:"F"},{n:"陳浠庭",y:2017,g:"F"},{n:"曾涴嘉",y:2017,g:"F"},{n:"陳迦琳",y:2017,g:"F"},{n:"焦梓涵",y:2017,g:"F"},{n:"鄧芓游",y:2017,g:"F"},{n:"蔡蔚言",y:2017,g:"F"},{n:"方一心",y:2017,g:"F"},{n:"儲思佳",y:2017,g:"F"},{n:"徐梓瑤",y:2017,g:"F"},{n:"陳希妍",y:2017,g:"F"},
-    {n:"謝瀚陞",y:2018,g:"M"},{n:"胡仲希",y:2018,g:"M"},{n:"黃語浚",y:2018,g:"M"},{n:"梁喬珀",y:2018,g:"M"},{n:"鄔嘉樂",y:2018,g:"M"},{n:"林建宇",y:2018,g:"M"},{n:"李泓亮",y:2018,g:"M"},{n:"廖柏希",y:2018,g:"M"},{n:"伍梓灝",y:2018,g:"M"},{n:"陳境逸",y:2018,g:"M"},{n:"李天仁",y:2018,g:"M"},{n:"黃洛鋋",y:2018,g:"M"},{n:"杜濼麒",y:2018,g:"M"},{n:"李宇軒",y:2018,g:"M"},
-    {n:"周暟淳",y:2018,g:"F"},{n:"陳希兒",y:2018,g:"F"},{n:"鄧善殷",y:2018,g:"F"},{n:"李晉兒",y:2018,g:"F"},{n:"鄧雅殷",y:2018,g:"F"},{n:"雪壬愷",y:2018,g:"F"},{n:"邱曼露",y:2018,g:"F"},{n:"李心妤",y:2018,g:"F"},{n:"李梓雯",y:2018,g:"F"},{n:"張善愉",y:2018,g:"F"},{n:"麥稀澄",y:2018,g:"F"},{n:"童文涵",y:2018,g:"F"},{n:"林靖柔",y:2018,g:"F"}
-];
+        <h4>推鉛球 (大會紀錄：11.80米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>戚錦森 (慈航)</td><td>9.45米</td></tr>
+          <tr><td class="rank">2</td><td>楊鴻軒 (蕭漢森)</td><td>8.36米</td></tr>
+          <tr><td class="rank">3</td><td>張德邦 (禧年恩平)</td><td>8.31米</td></tr>
+          <tr><td class="rank">4</td><td>黃曉楊 (沙循)</td><td>7.41米</td></tr>
+          <tr><td class="rank">5</td><td>周貴睿 (救田家炳)</td><td>7.17米</td></tr>
+          <tr><td class="rank">6</td><td>王煜偉 (馬循)</td><td>7.02米</td></tr>
+          <tr><td class="rank">7</td><td>黃一騰 (莊啟程)</td><td>6.78米</td></tr>
+          <tr><td class="rank">8</td><td>林柏峯 (浸大附小)</td><td>6.67米</td></tr>
+        </table>
 
-// 2. 大會紀錄常數表
-const TOURNAMENT_RECORDS = {
-    "shatin_男甲_60米": "8.21", "shatin_男甲_100米": "12.64", "shatin_男甲_200米": "27.43", "shatin_男甲_400米": "1:04.13", "shatin_男甲_跳高": "1.48米", "shatin_男甲_跳遠": "5.08米", "shatin_男甲_擲壘球": "54.13米", "shatin_男甲_推鉛球": "11.80米", "shatin_男甲_接力": "53.48",
-    "shatin_男乙_60米": "8.67", "shatin_男乙_100米": "13.55", "shatin_男乙_200米": "27.89", "shatin_男乙_跳高": "1.32米", "shatin_男乙_跳遠": "4.58米", "shatin_男乙_擲壘球": "38.25米", "shatin_男乙_接力": "57.38",
-    "shatin_男丙_60米": "8.89", "shatin_男丙_100米": "14.37", "shatin_男丙_跳遠": "3.96米", "shatin_男丙_接力": "1:00.22",
-    "shatin_女甲_60米": "8.16", "shatin_女甲_100米": "14.11", "shatin_女甲_200米": "28.42", "shatin_女甲_400米": "1:07.78", "shatin_女甲_跳高": "1.40米", "shatin_女甲_跳遠": "4.44米", "shatin_女甲_擲壘球": "38.71米", "shatin_女甲_推鉛球": "8.43米", "shatin_女甲_接力": "56.22",
-    "shatin_女乙_60米": "8.79", "shatin_女乙_100米": "13.85", "shatin_女乙_200米": "30.54", "shatin_女乙_跳高": "1.28米", "shatin_女乙_跳遠": "4.23米", "shatin_女乙_擲壘球": "34.66米", "shatin_女乙_接力": "59.15",
-    "shatin_女丙_60米": "9.30", "shatin_女丙_100米": "14.87", "shatin_女丙_跳遠": "3.99米", "shatin_女丙_接力": "1:02.26"
-};
+        <h4>4 x 100米接力 (大會紀錄：53.48)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>慈航</td><td class="rec">52.61*</td></tr>
+          <tr><td class="rank">2</td><td>台山陳元喜</td><td>53.66</td></tr>
+          <tr><td class="rank">3</td><td>沙呂小</td><td>55.66</td></tr>
+          <tr><td class="rank">4</td><td>靈糧</td><td>55.84</td></tr>
+          <tr><td class="rank">5</td><td>蔡榮星</td><td>56.03</td></tr>
+          <tr><td class="rank">6</td><td>蕭漢森</td><td>56.98</td></tr>
+          <tr><td class="rank">7</td><td>馬主風</td><td>57.53</td></tr>
+          <tr><td class="rank">8</td><td>沙官</td><td>57.72</td></tr>
+        </table>
+      </div>
+    </details>
 
-// ==========================================
-// 歷屆成績庫設定區
-// ==========================================
+    <details open>
+      <summary>男子乙組</summary>
+      <div class="division-content">
+        <h4>60米 (大會紀錄：8.67)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>彭森聰 (沙呂小)</td><td class="rec">8.64*</td></tr>
+          <tr><td class="rank">2</td><td>鄧樂平 (台山陳元喜)</td><td>8.96</td></tr>
+          <tr><td class="rank">3</td><td>邱信傑 (朱正賢)</td><td>9.06</td></tr>
+          <tr><td class="rank">4</td><td>梁程謙 (朱正賢)</td><td>9.15</td></tr>
+          <tr><td class="rank">5</td><td>程琛皓 (救田家炳)</td><td>9.16</td></tr>
+          <tr><td class="rank">6</td><td>梁靖玄 (無玷聖心)</td><td>9.2</td></tr>
+          <tr><td class="rank">7</td><td>李東熹 (浸呂小)</td><td>9.32</td></tr>
+          <tr><td class="rank">8</td><td>朱子键 (馬聖若瑟)</td><td>9.4</td></tr>
+        </table>
 
-// [沙田區數據]
-const SHATIN_HISTORY = [
-    { grade: "男甲", event: "60米", rank: "1", name: "楊鴻軒", school: "蕭漢森", result: "7.88*" }, 
-    { grade: "男甲", event: "60米", rank: "2", name: "陳建璇", school: "泰伯", result: "8.41" },
-    // 因為沙田數據太長，這裏省略其餘部分，請直接將 V36 的 SHATIN_HISTORY 完整覆蓋這裏
-];
-// 設定賽事標籤
-SHATIN_HISTORY.forEach(h => h.comp = "shatin");
+        <h4>100米 (大會紀錄：13.55)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>莫子充 (王賜豪)</td><td>13.89</td></tr>
+          <tr><td class="rank">2</td><td>梁家軒 (浸大附小)</td><td>14.87</td></tr>
+          <tr><td class="rank">3</td><td>鄧懿諾 (浸大附小)</td><td>15.12</td></tr>
+          <tr><td class="rank">4</td><td>張作霖 (慈航)</td><td>15.2</td></tr>
+          <tr><td class="rank">5</td><td>吳鎧騫 (馬循)</td><td>15.31</td></tr>
+          <tr><td class="rank">6</td><td>吳珉慠 (台山陳元喜)</td><td>15.35</td></tr>
+          <tr><td class="rank">7</td><td>周立言 (培基)</td><td>15.502</td></tr>
+          <tr><td class="rank">8</td><td>黃世義 (沙循)</td><td>15.503</td></tr>
+        </table>
 
-// [保良局數據預留區]
-const PLK_HISTORY = [
-    // 請在此處貼上保良局的數據 (範例)
-    { grade: "男甲", event: "60米", rank: "1", name: "示範學生A", school: "保良局小學", result: "8.10" },
-    { grade: "男甲", event: "100米", rank: "1", name: "示範學生B", school: "保良局小學", result: "13.20" }
-];
-// 設定賽事標籤
-PLK_HISTORY.forEach(h => h.comp = "plk");
+        <h4>200米 (大會紀錄：27.89)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>彭哲仁 (培僑書院)</td><td>28.9</td></tr>
+          <tr><td class="rank">2</td><td>李勇培 (王賜豪)</td><td>29.69</td></tr>
+          <tr><td class="rank">3</td><td>朱政熙 (莊啟程)</td><td>30.69</td></tr>
+          <tr><td class="rank">4</td><td>李一夫 (浸大附小)</td><td>31.01</td></tr>
+          <tr><td class="rank">5</td><td>何善揚 (台山陳元喜)</td><td>31.17</td></tr>
+          <tr><td class="rank">6</td><td>郭皙珩 (朱正賢)</td><td>32.04</td></tr>
+          <tr><td class="rank">7</td><td>陳逸俊 (救田家炳)</td><td>32.23</td></tr>
+          <tr><td class="rank">8</td><td>盧俊熹 (沙田圍胡素貞)</td><td>32.5</td></tr>
+        </table>
 
-// [五校賽數據預留區]
-const FIVE_HISTORY = [
-    // 請在此處貼上五校賽的數據 (範例)
-    { grade: "男丁", event: "60米", rank: "1", name: "示範學生C", school: "屬下小學", result: "9.20" }
-];
-// 設定賽事標籤
-FIVE_HISTORY.forEach(h => h.comp = "five");
+        <h4>跳高 (大會紀錄：1.32米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>陳梓進 (王賜豪)</td><td>1.26米</td></tr>
+          <tr><td class="rank">2</td><td>何善揚 (台山陳元喜)</td><td>1.26米</td></tr>
+          <tr><td class="rank">3</td><td>黃奕唯 (朱正賢)</td><td>1.15米</td></tr>
+          <tr><td class="rank">4</td><td>史恩齐 (馬主風)</td><td>1.15米</td></tr>
+          <tr><td class="rank">5</td><td>關泊瀧 (慈航)</td><td>1.10米</td></tr>
+          <tr><td class="rank">6</td><td>蔡溱希 (胡素貞)</td><td>1.10米</td></tr>
+          <tr><td class="rank">7</td><td>王佑安 (培僑書院)</td><td>1.10米</td></tr>
+          <tr><td class="rank">8</td><td>張奕宸 (蔡榮星)</td><td>1.05米</td></tr>
+        </table>
 
-// 合併三個比賽的數據
-let historyData = [];
-historyData = historyData.concat(SHATIN_HISTORY);
-historyData = historyData.concat(PLK_HISTORY);
-historyData = historyData.concat(FIVE_HISTORY);
+        <h4>跳遠 (大會紀錄：4.58米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>莫子充 (王賜豪)</td><td>4.26米</td></tr>
+          <tr><td class="rank">2</td><td>華康靖 (雨川)</td><td>4.06米</td></tr>
+          <tr><td class="rank">3</td><td>彭哲仁 (培僑書院)</td><td>3.95米</td></tr>
+          <tr><td class="rank">4</td><td>馮宇澤 (台山陳元喜)</td><td>3.84米</td></tr>
+          <tr><td class="rank">5</td><td>陳奕陽 (胡素貞)</td><td>3.69米</td></tr>
+          <tr><td class="rank">6</td><td>蔡睿謙 (沙呂小)</td><td>3.66米</td></tr>
+          <tr><td class="rank">7</td><td>郭皙珩 (朱正賢)</td><td>3.64米</td></tr>
+          <tr><td class="rank">8</td><td>馮柏翹 (愛禮信)</td><td>3.59米</td></tr>
+        </table>
 
+        <h4>擲壘球 (大會紀錄：38.25米)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>林雨晧 (浸大附小)</td><td>37.99米</td></tr>
+          <tr><td class="rank">2</td><td>李勇培 (王賜豪)</td><td>37.51米</td></tr>
+          <tr><td class="rank">3</td><td>黃頌軒 (蔡榮星)</td><td>33.64米</td></tr>
+          <tr><td class="rank">4</td><td>黃光駿 (馬循)</td><td>31.41米</td></tr>
+          <tr><td class="rank">5</td><td>張銘齊 (胡素貞)</td><td>30.12米</td></tr>
+          <tr><td class="rank">6</td><td>韓子軒 (沙田圍胡素貞)</td><td>29.80米</td></tr>
+          <tr><td class="rank">7</td><td>劉政杰 (美林)</td><td>29.76米</td></tr>
+          <tr><td class="rank">8</td><td>魏思李 (馬主風)</td><td>29.13米</td></tr>
+        </table>
 
-// ==========================================
-// 初始化系統變數
-// ==========================================
-let students = JSON.parse(localStorage.getItem('ckc_stu_v26'));
-if (!students || students.length < 50) {
-    students = CORE_STUDENTS;
-}
+        <h4>4 x 100米接力 (大會紀錄：57.38)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>王賜豪</td><td class="rec">57.35*</td></tr>
+          <tr><td class="rank">2</td><td>培僑書院</td><td>58.45</td></tr>
+          <tr><td class="rank">3</td><td>台山陳元喜</td><td>58.54</td></tr>
+          <tr><td class="rank">4</td><td>朱正賢</td><td>59.08</td></tr>
+          <tr><td class="rank">5</td><td>浸大附小</td><td>59.42</td></tr>
+          <tr><td class="rank">6</td><td>救田家炳</td><td>1:00.31</td></tr>
+          <tr><td class="rank">7</td><td>莊啟程</td><td>1:01.63</td></tr>
+          <tr><td class="rank">8</td><td>沙呂小</td><td>1:01.77</td></tr>
+        </table>
+      </div>
+    </details>
 
-let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || JSON.parse(localStorage.getItem('ckc_rec_v21')) || [];
-let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || JSON.parse(localStorage.getItem('ckc_sq_v21')) || {};
+    <details open>
+      <summary>男子丙組</summary>
+      <div class="division-content">
+        <h4>60米 (大會紀錄：8.89)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>朱柏陽 (沙小)</td><td class="rec">8.80*</td></tr>
+          <tr><td class="rank">2</td><td>邱梓傑 (莊啟程)</td><td>9.26</td></tr>
+          <tr><td class="rank">3</td><td>丘希朗 (浸大附小)</td><td>9.29</td></tr>
+          <tr><td class="rank">4</td><td>陳朗維 (浸大附小)</td><td>9.38</td></tr>
+          <tr><td class="rank">5</td><td>莫傲然 (沙呂小)</td><td>9.41</td></tr>
+          <tr><td class="rank">6</td><td>滕彬 (慈航)</td><td>9.42</td></tr>
+          <tr><td class="rank">7</td><td>張逸軒 (台山陳元喜)</td><td>9.43</td></tr>
+          <tr><td class="rank">8</td><td>黎俊晟 (培僑書院)</td><td>9.51</td></tr>
+        </table>
 
-let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || {
-    plk: { 
-        A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, 
-        B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6}, 
-        C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} 
-    },
-    shatin: { 
-        A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, 
-        B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"跳高":1,"擲壘球":1,"4x100m":6}, 
-        C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} 
-    },
-    five: { 
-        A: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, 
-        B: {"100m":4,"200m":4,"跳遠":2,"推鉛球":2,"4x100m":6}, 
-        C: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6}, 
-        D: {"60m":4,"100m":4,"跳遠":2,"擲壘球":2,"4x100m":6} 
-    }
-};
-
-const events = ["60m", "100m", "200m", "400m", "跳遠", "跳高", "擲壘球", "推鉛球", "4x100m"];
-let activeSlot = null;
-let chartInstance = null;
-
-// ==========================================
-// 系統啟動設定
-// ==========================================
-window.onload = function() {
-    // 建立年份下拉選單
-    const yearSelects = document.querySelectorAll('.year-select');
-    yearSelects.forEach(sel => {
-        for(let y = 2014; y <= 2026; y++) {
-            sel.add(new Option(y + " 年", y));
-        }
-    });
-
-    document.getElementById('resYear').value = 2015;
-    document.getElementById('chartYear').value = 2015;
-    document.getElementById('resDate').valueAsDate = new Date();
-    
-    // 建立項目下拉選單
-    const resEv = document.getElementById('resEvent');
-    const chartEv = document.getElementById('chartEvent');
-    resEv.innerHTML = ""; 
-    chartEv.innerHTML = "";
-    
-    events.forEach(e => { 
-        resEv.add(new Option(e, e)); 
-        chartEv.add(new Option(e, e)); 
-    });
-    
-    refreshUI();
-};
-
-function refreshUI() { 
-    updateResNames(); 
-    renderRecords(); 
-    renderStudentAdmin(); 
-    renderSquadBoard(); 
-    renderHistoryTable(); 
-}
-
-function saveAll() {
-    localStorage.setItem('ckc_stu_v26', JSON.stringify(students));
-    localStorage.setItem('ckc_rec_v26', JSON.stringify(records));
-    localStorage.setItem('ckc_sq_v26', JSON.stringify(squads));
-    localStorage.setItem('ckckt_cfg_v26', JSON.stringify(squadConfig));
-}
-
-// ==========================================
-// 分頁切換功能
-// ==========================================
-function switchTab(id) { 
-    // 隱藏所有內容
-    const contents = document.querySelectorAll('.tab-content');
-    contents.forEach(c => c.classList.remove('active')); 
-    
-    // 取消所有按鈕的反白狀態
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(b => b.classList.remove('active')); 
-    
-    // 顯示目標內容與按鈕
-    document.getElementById(id).classList.add('active'); 
-    
-    buttons.forEach(b => {
-        if(b.getAttribute('onclick') && b.getAttribute('onclick').includes(id)) {
-            b.classList.add('active');
-        }
-    });
-
-    // 如果切換到圖表頁面，稍微延遲繪製以防止 Canvas 錯誤
-    if(id === 'analysis') {
-        setTimeout(updateAnalysis, 100);
-    }
-}
-
-// ==========================================
-// 歷屆成績顯示
-// ==========================================
-function renderHistoryTable() {
-    const comp = document.getElementById('histComp').value;
-    const grade = document.getElementById('histGrade').value;
-    const eventSearch = document.getElementById('histEvent').value;
-    const area = document.getElementById('historyArea');
-    const noteEl = document.getElementById('recordNote');
-    
-    const recordKey = comp + "_" + grade + "_" + (eventSearch === "all" ? "" : eventSearch);
-    
-    // 顯示大會紀錄
-    if (eventSearch !== "all" && TOURNAMENT_RECORDS[recordKey]) {
-        noteEl.innerHTML = `🌟 本項目大會紀錄：<strong>${TOURNAMENT_RECORDS[recordKey]}</strong>`;
-    } else {
-        noteEl.innerHTML = "";
-    }
-
-    // 過濾資料
-    const filtered = historyData.filter(h => {
-        const matchComp = h.comp === comp;
-        const matchGrade = h.grade === grade;
-        const matchEvent = eventSearch === "all" || h.event.includes(eventSearch);
-        return matchComp && matchGrade && matchEvent;
-    });
-
-    // 如果沒有資料
-    if(filtered.length === 0) {
-        area.innerHTML = "<tr><td colspan='5' style='text-align:center;'>此賽事暫無內置數據，請提供資料以便更新。</td></tr>";
-        return;
-    }
-
-    // 產生表格內容
-    area.innerHTML = filtered.map(h => {
-        const isRecord = String(h.result).includes('*');
-        const badgeHTML = isRecord ? '<span class="record-badge">破紀錄</span>' : '';
-        
-        return `
-            <tr>
-                <td style="font-weight:bold; color:var(--plk-blue)">${h.event}</td>
-                <td>${h.rank}</td>
-                <td>${h.name}</td>
-                <td style="font-size:0.8rem; color:#666;">${h.school}</td>
-                <td style="font-weight:bold; color:var(--plk-red)">${h.result} ${badgeHTML}</td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// ==========================================
-// 數據分析
-// ==========================================
-function updateAnalysis() {
-    const yr = parseInt(document.getElementById('chartYear').value);
-    const g = document.getElementById('chartGender').value;
-    const ev = document.getElementById('chartEvent').value;
-    
-    // 判斷是否為田賽（數值越大越好）
-    const isField = ["跳遠", "跳高", "擲壘球", "推鉛球"].includes(ev);
-    
-    const getSafeDate = (dStr) => new Date(String(dStr).replace(/-/g, '/'));
-
-    // 過濾並按照日期排序
-    const filtered = records.filter(r => r.year === yr && r.gender === g && r.event === ev);
-    filtered.sort((a, b) => getSafeDate(a.date) - getSafeDate(b.date));
-    
-    // 計算歷史最佳五強
-    const bests = {};
-    filtered.forEach(r => { 
-        if(!bests[r.name]) {
-            bests[r.name] = r;
-        } else {
-            if (isField && r.val > bests[r.name].val) bests[r.name] = r;
-            if (!isField && r.val < bests[r.name].val) bests[r.name] = r;
-        }
-    });
-    
-    const top5 = Object.values(bests).sort((a, b) => isField ? b.val - a.val : a.val - b.val).slice(0, 5);
-    
-    const top5Area = document.getElementById('top5Area');
-    top5Area.innerHTML = top5.map((r, i) => {
-        return `<tr><td>${i+1}</td><td>${r.name}</td><td>${r.val}</td><td>${r.comp}</td><td>${r.date}</td></tr>`;
-    }).join('');
-    
-    // 繪製圖表
-    const sortedLabels = [...new Set(filtered.map(r => r.date))];
-    sortedLabels.sort((a, b) => getSafeDate(a) - getSafeDate(b));
-    
-    const studentData = {}; 
-    filtered.forEach(r => { 
-        if(!studentData[r.name]) {
-            studentData[r.name] = []; 
-        }
-        studentData[r.name].push({ x: r.date, y: r.val }); 
-    });
-    
-    if(chartInstance) {
-        chartInstance.destroy();
-    }
-    
-    const ctx = document.getElementById('compareChart').getContext('2d');
-    chartInstance = new Chart(ctx, {
-        type: 'line', 
-        data: { 
-            labels: sortedLabels, 
-            datasets: Object.keys(studentData).map((n, i) => {
-                return { 
-                    label: n, 
-                    data: studentData[n], 
-                    borderColor: `hsl(${(i * 75) % 360}, 70%, 50%)`, 
-                    fill: false, 
-                    tension: 0.1 
-                };
-            }) 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            scales: { 
-                y: { 
-                    reverse: !isField 
-                } 
-            } 
-        }
-    });
-}
-
-// ==========================================
-// 排陣管理設定
-// ==========================================
-function toggleConfigPanel() { 
-    const p = document.getElementById('configPanel'); 
-    p.style.display = (p.style.display === 'none') ? 'block' : 'none'; 
-}
-
-function addOrUpdateConfig() {
-    const comp = document.getElementById('sqComp').value;
-    const gKey = document.getElementById('sqGrade').value.replace('F', '');
-    const evName = document.getElementById('cfgEventName').value.trim();
-    const quota = parseInt(document.getElementById('cfgQuota').value);
-    
-    if(!evName || isNaN(quota)) {
-        return alert("請輸入項目及名額");
-    }
-    
-    if(!squadConfig[comp][gKey]) {
-        squadConfig[comp][gKey] = {};
-    }
-    
-    squadConfig[comp][gKey][evName] = quota; 
-    saveAll(); 
-    renderSquadBoard();
-}
-
-function deleteConfigEvent() {
-    const comp = document.getElementById('sqComp').value;
-    const gKey = document.getElementById('sqGrade').value.replace('F', '');
-    const evName = document.getElementById('cfgEventName').value.trim();
-    
-    if(squadConfig[comp][gKey] && squadConfig[comp][gKey][evName]) { 
-        delete squadConfig[comp][gKey][evName]; 
-        saveAll(); 
-        renderSquadBoard(); 
-    }
-}
-
-function renderSquadBoard() {
-    const comp = document.getElementById('sqComp').value;
-    const gKey = document.getElementById('sqGrade').value;
-    const gender = gKey.startsWith('F') ? 'F' : 'M';
-    const grade = gKey.replace('F', '');
-    const board = document.getElementById('squadBoard'); 
-    
-    board.innerHTML = "";
-    
-    const qSet = (squadConfig[comp] && squadConfig[comp][grade]) ? squadConfig[comp][grade] : {};
-    
-    Object.keys(qSet).forEach(ev => {
-        const count = qSet[ev];
-        const key = `${comp}_${gKey}_${ev}`;
-        const names = squads[key] || [];
-        let pills = "";
-        
-        for(let i = 0; i < count; i++) {
-            const n = names[i] || "待選擇";
-            const isFilledClass = n !== '待選擇' ? 'slot-filled' : '';
-            pills += `<div class="slot-pill ${isFilledClass}" onclick="openPicker('${key}', ${i}, '${gender}', '${grade}')">${n}</div>`;
-        }
-        
-        board.innerHTML += `
-            <div class="event-slot-card">
-                <span class="slot-title">${ev} (${count}名)</span>
-                ${pills}
-            </div>
-        `;
-    });
-}
-
-function getGradeByYear(y) { 
-    const age = 2026 - y; 
-    if (age >= 11) return 'A';
-    if (age === 10) return 'B';
-    if (age === 9) return 'C';
-    return 'D'; 
-}
-
-function canJoin(y, target) { 
-    const order = {'D':1, 'C':2, 'B':3, 'A':4}; 
-    return order[target] >= order[getGradeByYear(y)]; 
-}
-
-function openPicker(key, idx, g, tg) { 
-    activeSlot = { key, idx, g, tg }; 
-    document.getElementById('pickerModal').style.display = "flex"; 
-    filterPickerList(); 
-}
-
-function filterPickerList() {
-    const term = document.getElementById('pickerSearch').value.toLowerCase();
-    const list = document.getElementById('pickerList'); 
-    list.innerHTML = "";
-    
-    const filteredStudents = students.filter(s => {
-        return s.g === activeSlot.g && s.n.toLowerCase().includes(term) && canJoin(s.y, activeSlot.tg);
-    });
-
-    filteredStudents.forEach(s => {
-        const b = document.createElement('button'); 
-        b.className = "btn btn-dark"; 
-        b.style.background = "#fff"; 
-        b.style.color = "#333"; 
-        b.style.border = "1px solid #ddd";
-        b.innerHTML = `${s.n}<br><small>${s.y}(${getGradeByYear(s.y)})</small>`;
-        
-        b.onclick = function() { 
-            const { key, idx } = activeSlot; 
-            if(!squads[key]) {
-                squads[key] = []; 
-            }
-            squads[key][idx] = s.n; 
-            saveAll(); 
-            renderSquadBoard(); 
-            closePicker(); 
-        };
-        list.appendChild(b);
-    });
-}
-
-function selectAthlete(n) { 
-    const { key, idx } = activeSlot; 
-    if(!squads[key]) {
-        squads[key] = []; 
-    }
-    squads[key][idx] = n === "" ? null : n; 
-    saveAll(); 
-    renderSquadBoard(); 
-    closePicker(); 
-}
-
-function closePicker() { 
-    document.getElementById('pickerModal').style.display = "none"; 
-}
-
-// ==========================================
-// 成績記錄功能
-// ==========================================
-function saveRecord() {
-    const id = document.getElementById('editModeId').value;
-    const name = document.getElementById('resName').value;
-    const val = parseFloat(document.getElementById('resVal').value);
-    
-    if(!name || isNaN(val)) {
-        return alert("請填寫姓名及成績");
-    }
-    
-    const data = { 
-        id: id ? parseFloat(id) : Date.now(), 
-        comp: document.getElementById('resCompName').value || "日常測試", 
-        date: document.getElementById('resDate').value, 
-        name: name, 
-        year: parseInt(document.getElementById('resYear').value), 
-        gender: document.getElementById('resGender').value, 
-        event: document.getElementById('resEvent').value, 
-        val: val, 
-        award: document.getElementById('resAward').value 
-    };
-    
-    if(id) {
-        const index = records.findIndex(r => r.id == id);
-        records[index] = data; 
-    } else {
-        records.unshift(data);
-    }
-    
-    saveAll(); 
-    renderRecords();
-}
-
-function renderRecords() { 
-    const area = document.getElementById('recordListArea');
-    area.innerHTML = records.map(r => {
-        return `
-            <tr>
-                <td>${r.date}</td>
-                <td><strong>${r.name}</strong></td>
-                <td>${r.event}</td>
-                <td>${r.val}</td>
-                <td>${r.comp}</td>
-                <td>
-                    <button class="btn btn-blue" onclick="editRecord(${r.id})">編輯</button> 
-                    <button class="btn btn-red" onclick="deleteRecord(${r.id})">刪除</button>
-                </td>
-            </tr>
-        `;
-    }).join(''); 
-}
-
-function deleteRecord(id) { 
-    if(confirm("確定要刪除這筆成績嗎？")) {
-        records = records.filter(r => r.id != id);
-        saveAll();
-        renderRecords();
-    } 
-}
-
-function editRecord(id) {
-    const r = records.find(x => x.id == id);
-    document.getElementById('editModeId').value = r.id; 
-    document.getElementById('resCompName').value = r.comp; 
-    document.getElementById('resDate').value = r.date;
-    document.getElementById('resYear').value = r.year; 
-    document.getElementById('resGender').value = r.gender; 
-    
-    updateResNames();
-    
-    document.getElementById('resName').value = r.name; 
-    document.getElementById('resEvent').value = r.event; 
-    document.getElementById('resVal').value = r.val;
-    document.getElementById('resAward').value = r.award; 
-    
-    document.getElementById('cancelBtn').style.display = "inline";
-}
-
-function cancelEdit() { 
-    document.getElementById('editModeId').value = ""; 
-    
-    const inputs = document.getElementById('editFormSection').querySelectorAll('input');
-    inputs.forEach(i => i.value = ""); 
-    
-    document.getElementById('cancelBtn').style.display = "none"; 
-}
-
-function updateResNames() { 
-    const yr = parseInt(document.getElementById('resYear').value);
-    const g = document.getElementById('resGender').value;
-    const sel = document.getElementById('resName'); 
-    
-    sel.innerHTML = ""; 
-    
-    students.filter(s => s.y === yr && s.g === g).forEach(s => {
-        sel.add(new Option(s.n, s.n));
-    }); 
-}
-
-// ==========================================
-// 學生名單管理
-// ==========================================
-function addNewStudent() { 
-    const n = document.getElementById('newStuName').value.trim();
-    const y = parseInt(document.getElementById('newStuYear').value);
-    const g = document.getElementById('newStuGender').value;
-    
-    if(n) {
-        students.push({ n: n, y: y, g: g });
-        saveAll();
-        renderStudentAdmin();
-        updateResNames();
-        document.getElementById('newStuName').value = "";
-    } 
-}
-
-function renderStudentAdmin() { 
-    const area = document.getElementById('stuListArea');
-    const sortedStudents = [...students].sort((a, b) => b.y - a.y);
-    
-    area.innerHTML = sortedStudents.map(s => {
-        return `
-            <tr>
-                <td>${s.n}</td>
-                <td>${s.y}</td>
-                <td>${s.g}</td>
-                <td>${getGradeByYear(s.y)}</td>
-                <td><button onclick="deleteStudent('${s.n}', ${s.y})">廢除</button></td>
-            </tr>
-        `;
-    }).join(''); 
-}
-
-function deleteStudent(n, y) { 
-    if(confirm(`確定要廢除運動員 ${n} 嗎？`)) {
-        students = students.filter(s => !(s.n === n && s.y === y));
-        saveAll();
-        renderStudentAdmin();
-    } 
-}
-
-// ==========================================
-// 匯入與匯出 Excel 功能
-// ==========================================
-function exportToExcel() { 
-    const wb = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(students), "Students"); 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(records), "Records"); 
-    XLSX.writeFile(wb, `PLKCKT_Data_V37.xlsx`); 
-}
-
-function importFromExcel(event) { 
-    const reader = new FileReader(); 
-    reader.onload = function(e) {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-        
-        if(confirm("這將會覆蓋現有數據，確定要繼續嗎？")) {
-            if(wb.Sheets["Students"]) {
-                students = XLSX.utils.sheet_to_json(wb.Sheets["Students"]);
-            }
-            if(wb.Sheets["Records"]) {
-                records = XLSX.utils.sheet_to_json(wb.Sheets["Records"]);
-            }
-            saveAll();
-            location.reload();
-        }
-    }; 
-    reader.readAsArrayBuffer(event.target.files[0]); 
-}
-</script>
-</body>
-</html>
+        <h4>100米 (大會紀錄：14.37)</h4>
+        <table>
+          <tr><th class="rank">名次</th><th>運動員 / 學校</th><th>成績</th></tr>
+          <tr><td class="rank">1</td><td>呂旻擎 (雨川)</td><td>15.21</td></tr>
+          <tr><td class="rank">2</td><td>李宇澤 (莊啟程)</td>
