@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLKCKT 田徑隊管理系統 V35</title>
+    <title>PLKCKT 田徑隊管理系統 V35 (連排陣匯入匯出)</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -173,6 +173,9 @@
                 </select>
                 <button class="btn btn-orange" onclick="toggleConfigPanel()">⚙️ 編輯項目與名額</button>
                 <button class="btn btn-dark" onclick="window.print()">🖨️ 列印名單</button>
+                <button class="btn btn-green" onclick="exportSquadToExcel()">📤 匯出排陣(Excel)</button>
+                <button class="btn btn-dark" onclick="document.getElementById('importSquadFile').click()">📥 匯入排陣</button>
+                <input type="file" id="importSquadFile" style="display:none" accept=".xlsx, .xls" onchange="importSquadFromExcel(event)">
             </div>
             <div id="configPanel" class="config-panel" style="display:none; margin-top:15px;">
                 <h4>⚙️ 編輯當前組別項目及名額</h4>
@@ -467,7 +470,7 @@ function renderSquadBoard() {
     renderScoreBoard();
 }
 
-// === 新增：渲染即時計分板 ===
+// === 即時計分板渲染邏輯 ===
 function renderScoreBoard() {
     const comp = document.getElementById('sqComp').value;
     const gKey = document.getElementById('sqGrade').value;
@@ -509,7 +512,7 @@ function renderScoreBoard() {
     }
 }
 
-// === 新增：即時更新分數並儲存 ===
+// === 即時更新分數並儲存 ===
 function updateScore(key, idx, val) {
     if(!squadScores[key]) squadScores[key] = [];
     squadScores[key][idx] = parseFloat(val);
@@ -518,7 +521,7 @@ function updateScore(key, idx, val) {
     calculateTotal(); // 更新總分顯示
 }
 
-// === 新增：即時計算畫面上的總分 ===
+// === 即時計算畫面上的總分 ===
 function calculateTotal() {
     let total = 0;
     document.querySelectorAll('.score-input').forEach(input => {
@@ -569,6 +572,108 @@ function renderStudentAdmin() { document.getElementById('stuListArea').innerHTML
 function deleteStudent(n,y) { if(confirm("廢除？")){students=students.filter(s=>!(s.n==n&&s.y==y));saveAll();renderStudentAdmin();} }
 function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(students),"Students"); XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(records),"Records"); XLSX.writeFile(wb,`PLKCKT_Data_V35.xlsx`); }
 function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
+
+
+// ==========================================
+// 全新功能：匯出排陣至 Excel
+// ==========================================
+function exportSquadToExcel() {
+    let exportData = [];
+    const compMap = { plk: "（保良局）全港小學賽", shatin: "（學界）沙田小學賽", five: "（五校）沙田屬下小學賽" };
+    const gradeMap = { A: "男甲", FA: "女甲", B: "男乙", FB: "女乙", C: "男丙", FC: "女丙", D: "男丁", FD: "女丁" };
+
+    Object.keys(squadConfig).forEach(comp => {
+        Object.keys(squadConfig[comp]).forEach(grade => {
+            const gKeys = [grade, 'F' + grade]; 
+            gKeys.forEach(gKey => {
+                const qSet = squadConfig[comp][grade];
+                Object.keys(qSet).forEach(ev => {
+                    const count = qSet[ev];
+                    const key = `${comp}_${gKey}_${ev}`;
+                    const names = squads[key] || [];
+                    const scores = squadScores[key] || [];
+                    
+                    for(let i=0; i<count; i++) {
+                        exportData.push({
+                            "系統代碼(勿改)": key + "_" + i,
+                            "賽事": compMap[comp] || comp,
+                            "組別": gradeMap[gKey] || gKey,
+                            "項目": ev,
+                            "席位/棒次": (i + 1),
+                            "運動員姓名": names[i] || "",
+                            "分數": scores[i] !== undefined && scores[i] !== null ? scores[i] : ""
+                        });
+                    }
+                });
+            });
+        });
+    });
+
+    if (exportData.length === 0) return alert("系統中無任何排陣設定可供匯出。");
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // 設定欄寬美化
+    ws['!cols'] = [{wch: 20}, {wch: 25}, {wch: 10}, {wch: 15}, {wch: 10}, {wch: 15}, {wch: 10}];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "排陣與計分紀錄");
+    XLSX.writeFile(wb, `PLKCKT_全部排陣與計分.xlsx`);
+}
+
+// ==========================================
+// 全新功能：從 Excel 匯入排陣
+// ==========================================
+function importSquadFromExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, {type: 'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(ws);
+
+            if (!confirm("即將匯入排陣資料。這將會覆蓋現有相同的排陣與分數紀錄，確定要繼續嗎？")) {
+                event.target.value = ""; 
+                return;
+            }
+
+            jsonData.forEach(row => {
+                const sysCode = row["系統代碼(勿改)"];
+                if (sysCode && sysCode.includes("_")) {
+                    const lastUnderscore = sysCode.lastIndexOf('_');
+                    if (lastUnderscore > -1) {
+                        const key = sysCode.substring(0, lastUnderscore);
+                        const idx = parseInt(sysCode.substring(lastUnderscore + 1));
+                        
+                        const name = row["運動員姓名"] || null;
+                        let score = row["分數"];
+                        score = (score !== undefined && score !== "" && score !== null) ? parseFloat(score) : null;
+
+                        if (!squads[key]) squads[key] = [];
+                        squads[key][idx] = name;
+
+                        if (!squadScores[key]) squadScores[key] = [];
+                        squadScores[key][idx] = score;
+                    }
+                }
+            });
+
+            saveAll();
+            renderSquadBoard();
+            alert("✅ 排陣資料匯入成功！畫面已更新。");
+        } catch (error) {
+            console.error(error);
+            alert("❌ 匯入失敗，請確認檔案格式是否正確且為本系統匯出之 Excel 檔。");
+        }
+        event.target.value = ""; 
+    };
+    reader.readAsArrayBuffer(file);
+}
+
 </script>
 </body>
 </html>
