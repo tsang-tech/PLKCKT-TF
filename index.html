@@ -47,9 +47,9 @@
         .picker-content { background:white; width:90%; max-width:450px; padding:20px; border-radius:15px; max-height:80vh; display:flex; flex-direction:column; }
         .picker-list { overflow-y:auto; flex-grow:1; margin:15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-        /* 計分板專用樣式 */
-        .rank-select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
-        .score-input { width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold; color: var(--plk-blue); }
+        /* 計分板專用樣式 - 已優化欄位寬度 */
+        .rank-select { width: 65px; padding: 6px 2px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
+        .score-input { width: 55px; padding: 6px 2px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold; color: var(--plk-blue); }
         .total-row td { font-weight: bold; background-color: #e9ecef; font-size: 1.1em; }
         #total-score { color: #d9534f; font-size: 1.2em; }
         .grand-total-box { margin-top: 20px; padding: 15px; background: #eef7ff; border-radius: 8px; border: 1px solid #b8daff; }
@@ -60,7 +60,7 @@
 <body>
 
 <div class="no-print">
-    <h1>PLKCKT 田徑隊管理系統 V35</h1>
+    <h1>PLKCKT 田徑隊 management 系統 V35</h1>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('results')">📝 成績管理</button>
@@ -163,7 +163,7 @@
         <div class="card">
             <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                 <select id="sqAcademicYear" style="background:#e8f0fe; font-weight:bold; color:var(--plk-blue);" onchange="renderSquadBoard()">
-                    </select>
+                </select>
                 
                 <select id="sqComp" onchange="renderSquadBoard()">
                     <option value="plk">（保良局）全港小學賽</option>
@@ -204,17 +204,17 @@
                     <table id="scoreTable">
                         <thead>
                             <tr>
-                                <th style="background-color: var(--plk-blue); color: white;">比賽項目</th>
+                                <th style="background-color: var(--plk-blue); color: white; width: 100px;">比賽項目</th>
                                 <th style="background-color: var(--plk-blue); color: white;">參賽運動員</th>
-                                <th style="background-color: var(--plk-blue); color: white; width: 120px;">比賽名次</th>
-                                <th style="background-color: var(--plk-blue); color: white; width: 120px;">項目分數</th>
+                                <th style="background-color: var(--plk-blue); color: white; width: 85px; text-align: center;">比賽名次</th>
+                                <th style="background-color: var(--plk-blue); color: white; width: 85px; text-align: center;">項目分數</th>
                             </tr>
                         </thead>
                         <tbody id="scoreTableBody"></tbody>
                         <tfoot>
                             <tr class="total-row">
                                 <td colspan="3" style="text-align: right;">當前顯示組別的總分數：</td>
-                                <td><span id="total-score">0</span> 分</td>
+                                <td style="text-align: center;"><span id="total-score">0</span> 分</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -301,7 +301,7 @@ if (!students || students.length < 50) students = CORE_STUDENTS;
 let records = JSON.parse(localStorage.getItem('ckc_rec_v26')) || [];
 let squads = JSON.parse(localStorage.getItem('ckc_sq_v26')) || {};
 let squadScores = JSON.parse(localStorage.getItem('ckc_sq_scores_v35')) || {}; 
-let squadRanks = JSON.parse(localStorage.getItem('ckc_sq_ranks_v35')) || {}; // 新增：儲存名次
+let squadRanks = JSON.parse(localStorage.getItem('ckc_sq_ranks_v35')) || {}; 
 
 let squadConfig = JSON.parse(localStorage.getItem('ckckt_cfg_v26')) || {
     plk: { A: {"60m":2,"100m":2,"200m":2,"400m":1,"跳遠":1,"跳高":1,"擲壘球":1,"推鉛球":1,"4x100m":6}, B: {"60m":2,"100m":2,"200m":2,"跳遠":1,"擲壘球":1,"4x100m":6}, C: {"60m":2,"100m":2,"跳遠":1,"4x100m":6} },
@@ -325,13 +325,11 @@ window.onload = () => {
     document.getElementById('chartYear').value = new Date().getFullYear();
     document.getElementById('resDate').valueAsDate = new Date();
     
-    // 排陣專用的「動態學年選單」
     const sqYearSel = document.getElementById('sqAcademicYear');
     if(sqYearSel) {
         for(let y=2024; y<=2035; y++) {
             sqYearSel.add(new Option((y-1) + "-" + y + " 年度", y));
         }
-        // 預設為 2025-2026年度 (基準年 = 2026)
         sqYearSel.value = 2026;
     }
 
@@ -351,7 +349,7 @@ function saveAll() {
     localStorage.setItem('ckc_sq_v26', JSON.stringify(squads));
     localStorage.setItem('ckckt_cfg_v26', JSON.stringify(squadConfig));
     localStorage.setItem('ckc_sq_scores_v35', JSON.stringify(squadScores));
-    localStorage.setItem('ckc_sq_ranks_v35', JSON.stringify(squadRanks)); // 儲存名次
+    localStorage.setItem('ckc_sq_ranks_v35', JSON.stringify(squadRanks)); 
 }
 
 function getSquadGrade(birthYear, baseYear) { 
@@ -365,15 +363,13 @@ function getSquadGrade(birthYear, baseYear) {
 }
 
 function canJoinSquadStrict(birthYear, targetGrade, baseYear) { 
-    // 嚴格配對，智能一鍵排陣專用
     return getSquadGrade(birthYear, baseYear) === targetGrade; 
 }
 
-// 保留原始的函數供學生名單使用
 function getGradeByYear(y) { const age = 2026 - y; return age >= 11 ? 'A' : age === 10 ? 'B' : age === 9 ? 'C' : 'D'; }
 
 // ==========================================
-// ★ 智能一鍵排陣 (按成績與學年嚴格自動安排) ★
+// 智能一鍵排陣
 // ==========================================
 function autoAssignSquad() {
     const comp = document.getElementById('sqComp').value;
@@ -498,7 +494,6 @@ function deleteConfigEvent() {
     if(squadConfig[comp][gKey] && squadConfig[comp][gKey][evName]) { delete squadConfig[comp][gKey][evName]; saveAll(); renderSquadBoard(); }
 }
 
-// 渲染排陣板 (同時觸發渲染計分板)
 function renderSquadBoard() {
     const comp = document.getElementById('sqComp').value, gKey = document.getElementById('sqGrade').value;
     const gender = gKey.startsWith('F') ? 'F' : 'M', grade = gKey.replace('F', '');
@@ -517,16 +512,16 @@ function renderSquadBoard() {
     renderScoreBoard();
 }
 
-// === 自動計算得分邏輯 ===
+// 自動計算得分邏輯
 function getScoreFromRank(rank, eventName) {
-    if (!rank || rank > 8) return 0; // 第9名或之後沒有分
+    if (!rank || rank > 8) return 0; 
     const isRelay = eventName.toLowerCase().includes('4x100') || eventName.includes('接力');
-    const normalScores = [9, 7, 6, 5, 4, 3, 2, 1]; // 1至8名常規分數
+    const normalScores = [9, 7, 6, 5, 4, 3, 2, 1]; 
     const score = normalScores[rank - 1];
-    return isRelay ? score * 2 : score; // 接力雙倍
+    return isRelay ? score * 2 : score; 
 }
 
-// === 即時計分板渲染邏輯 ===
+// ★ 即時計分板渲染邏輯 - 已修改：支援姓名完整顯示及收窄欄位 ★
 function renderScoreBoard() {
     const comp = document.getElementById('sqComp').value;
     const gKey = document.getElementById('sqGrade').value;
@@ -551,7 +546,6 @@ function renderScoreBoard() {
             const rank = ranks[i] || "";
             const score = scores[i] !== undefined && scores[i] !== null ? scores[i] : "";
             
-            // 產生 1-30 名次下拉選單
             let rankOptions = `<option value="">-</option>`;
             for(let r=1; r<=30; r++) {
                 rankOptions += `<option value="${r}" ${rank == r ? 'selected' : ''}>${r}</option>`;
@@ -560,13 +554,13 @@ function renderScoreBoard() {
             tbody.innerHTML += `
                 <tr>
                     <td style="font-weight:bold;">${ev}</td>
-                    <td><input type="text" value="${n}" disabled style="background:#f4f7f6; border:1px solid #ddd; padding:6px; color:#555;"></td>
-                    <td>
+                    <td style="font-weight: bold; color: #2c3e50;">${n}</td>
+                    <td style="text-align: center;">
                         <select class="rank-select" onchange="updateRankAndScore('${key}', ${i}, this.value, '${ev}')">
                             ${rankOptions}
                         </select>
                     </td>
-                    <td><input type="number" class="score-input" id="score_${key.replace(/\s+/g, '')}_${i}" value="${score}" min="0" oninput="updateScore('${key}', ${i}, this.value)"></td>
+                    <td style="text-align: center;"><input type="number" class="score-input" id="score_${key.replace(/\s+/g, '')}_${i}" value="${score}" min="0" oninput="updateScore('${key}', ${i}, this.value)"></td>
                 </tr>
             `;
         }
@@ -580,7 +574,6 @@ function renderScoreBoard() {
     }
 }
 
-// === 同步更新名次與分數 ===
 function updateRankAndScore(key, idx, rankVal, evName) {
     if(!squadRanks[key]) squadRanks[key] = [];
     squadRanks[key][idx] = rankVal;
@@ -591,10 +584,9 @@ function updateRankAndScore(key, idx, rankVal, evName) {
     }
     
     document.getElementById(`score_${key.replace(/\s+/g, '')}_${idx}`).value = newScore;
-    updateScore(key, idx, newScore); // 觸發儲存與總分計算
+    updateScore(key, idx, newScore); 
 }
 
-// 手動微調分數
 function updateScore(key, idx, val) {
     if(!squadScores[key]) squadScores[key] = [];
     squadScores[key][idx] = parseFloat(val);
@@ -603,7 +595,6 @@ function updateScore(key, idx, val) {
     calculateTotal(); 
 }
 
-// === 計算總分 (包含各賽事大總結) ===
 function calculateTotal() {
     let currentGroupTotal = 0;
     document.querySelectorAll('.score-input').forEach(input => {
@@ -612,7 +603,6 @@ function calculateTotal() {
     });
     document.getElementById('total-score').innerText = currentGroupTotal;
 
-    // 計算三大賽事的各自總分 (跨組別統計)
     let grandTotals = { plk: 0, shatin: 0, five: 0 };
     Object.keys(squadScores).forEach(key => {
         const comp = key.split('_')[0]; 
@@ -628,22 +618,15 @@ function calculateTotal() {
     document.getElementById('total-five').innerText = grandTotals.five;
 }
 
-// ==========================================
-// ★ 修改：手動選擇運動員時，允許越級挑戰 ★
-// ==========================================
 function openPicker(key, idx, g, tg) { activeSlot = {key, idx, g, tg}; document.getElementById('pickerModal').style.display="flex"; filterPickerList(); }
 function filterPickerList() {
     const term = document.getElementById('pickerSearch').value.toLowerCase();
     const list = document.getElementById('pickerList'); list.innerHTML = "";
-    
-    // 獲取當前排陣學年
     const baseYear = parseInt(document.getElementById('sqAcademicYear').value);
 
-    // 手動選人：只看性別，允許越級
     students.filter(s => s.g === activeSlot.g && s.n.toLowerCase().includes(term))
             .forEach(s => {
                 const b = document.createElement('button'); b.className="btn btn-dark"; b.style.background="#fff"; b.style.color="#333"; b.style.border="1px solid #ddd";
-                // 顯示真實應屬組別供教練參考
                 b.innerHTML=`${s.n}<br><small>${s.y}(${getSquadGrade(s.y, baseYear)}組)</small>`;
                 b.onclick=() => { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=s.n; saveAll(); renderSquadBoard(); closePicker(); };
                 list.appendChild(b);
@@ -681,7 +664,7 @@ function exportToExcel() { const wb=XLSX.utils.book_new(); XLSX.utils.book_appen
 function importFromExcel(event) { const r=new FileReader(); r.onload=(e)=>{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});if(confirm("覆蓋數據？")){if(wb.Sheets["Students"])students=XLSX.utils.sheet_to_json(wb.Sheets["Students"]);if(wb.Sheets["Records"])records=XLSX.utils.sheet_to_json(wb.Sheets["Records"]);saveAll();location.reload();}}; r.readAsArrayBuffer(event.target.files[0]); }
 
 // ==========================================
-// 匯出排陣至 Excel (加入名次)
+// 匯出排陣至 Excel
 // ==========================================
 function exportSquadToExcel() {
     let exportData = [];
