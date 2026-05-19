@@ -349,7 +349,7 @@ function getSquadGrade(birthYear, baseYear) {
 }
 
 function canJoinSquadStrict(birthYear, targetGrade, baseYear) { 
-    // 嚴格配對，禁止越級挑戰
+    // 嚴格配對，智能一鍵排陣專用
     return getSquadGrade(birthYear, baseYear) === targetGrade; 
 }
 
@@ -358,7 +358,7 @@ function getGradeByYear(y) { const age = 2026 - y; return age >= 11 ? 'A' : age 
 
 
 // ==========================================
-// ★ 全新功能：一鍵智能排陣 (按成績與學年自動安排) ★
+// ★ 智能一鍵排陣 (按成績與學年嚴格自動安排) ★
 // ==========================================
 function autoAssignSquad() {
     const comp = document.getElementById('sqComp').value;
@@ -376,7 +376,7 @@ function autoAssignSquad() {
     
     const qSet = (squadConfig[comp] && squadConfig[comp][grade]) ? squadConfig[comp][grade] : {};
     
-    // 找出該性別與組別所有符合嚴格年齡資格的學生
+    // 一鍵排陣時：找出該性別與組別所有符合「嚴格」年齡資格的學生，不允許越級
     let eligibleStudents = students.filter(s => s.g === gender && canJoinSquadStrict(s.y, grade, baseYear));
     
     Object.keys(qSet).forEach(ev => {
@@ -536,6 +536,7 @@ function renderSquadBoard() {
         board.innerHTML += `<div class="event-slot-card"><span class="slot-title">${ev} (${count}名)</span>${pills}</div>`;
     });
     
+    // 同步渲染計分板
     renderScoreBoard();
 }
 
@@ -560,6 +561,7 @@ function renderScoreBoard() {
         for(let i=0; i<count; i++) {
             hasItems = true;
             const n = names[i] || "待選擇";
+            // 取出之前儲存的分數，如果沒有則顯示空白
             const score = scores[i] !== undefined && scores[i] !== null ? scores[i] : "";
             
             tbody.innerHTML += `
@@ -574,20 +576,22 @@ function renderScoreBoard() {
     
     if(hasItems) {
         container.style.display = "block";
-        calculateTotal(); 
+        calculateTotal(); // 載入時先算一次總分
     } else {
         container.style.display = "none";
     }
 }
 
+// === 即時更新分數並儲存 ===
 function updateScore(key, idx, val) {
     if(!squadScores[key]) squadScores[key] = [];
     squadScores[key][idx] = parseFloat(val);
-    if(val === "") squadScores[key][idx] = null; 
-    saveAll(); 
-    calculateTotal(); 
+    if(val === "") squadScores[key][idx] = null; // 如果清空則設為 null
+    saveAll(); // 立即儲存至 localStorage
+    calculateTotal(); // 更新總分顯示
 }
 
+// === 即時計算畫面上的總分 ===
 function calculateTotal() {
     let total = 0;
     document.querySelectorAll('.score-input').forEach(input => {
@@ -599,7 +603,9 @@ function calculateTotal() {
     document.getElementById('total-score').innerText = total;
 }
 
-// 選擇排陣運動員彈窗邏輯
+// ==========================================
+// ★ 修改：手動選擇運動員時，允許越級挑戰 ★
+// ==========================================
 function openPicker(key, idx, g, tg) { activeSlot = {key, idx, g, tg}; document.getElementById('pickerModal').style.display="flex"; filterPickerList(); }
 function filterPickerList() {
     const term = document.getElementById('pickerSearch').value.toLowerCase();
@@ -608,16 +614,17 @@ function filterPickerList() {
     // 獲取當前排陣學年
     const baseYear = parseInt(document.getElementById('sqAcademicYear').value);
 
-    // ★ 過濾時使用嚴格不越級邏輯 canJoinSquadStrict ★
-    students.filter(s => s.g === activeSlot.g && s.n.toLowerCase().includes(term) && canJoinSquadStrict(s.y, activeSlot.tg, baseYear))
+    // ★ 修改：手動選擇時，只需性別相符即可，允許戰術上的「越級挑戰」！
+    students.filter(s => s.g === activeSlot.g && s.n.toLowerCase().includes(term))
             .forEach(s => {
                 const b = document.createElement('button'); b.className="btn btn-dark"; b.style.background="#fff"; b.style.color="#333"; b.style.border="1px solid #ddd";
-                // 顯示動態計算的所屬組別
+                // 顯示動態計算的所屬組別，方便教練辨識學生原本所屬年齡層
                 b.innerHTML=`${s.n}<br><small>${s.y}(${getSquadGrade(s.y, baseYear)}組)</small>`;
                 b.onclick=() => { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=s.n; saveAll(); renderSquadBoard(); closePicker(); };
                 list.appendChild(b);
             });
 }
+
 function selectAthlete(n) { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=n===""?null:n; saveAll(); renderSquadBoard(); closePicker(); }
 function closePicker() { document.getElementById('pickerModal').style.display="none"; }
 
