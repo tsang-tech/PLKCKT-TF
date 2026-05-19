@@ -47,7 +47,7 @@
         .picker-content { background:white; width:90%; max-width:450px; padding:20px; border-radius:15px; max-height:80vh; display:flex; flex-direction:column; }
         .picker-list { overflow-y:auto; flex-grow:1; margin:15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-        /* 計分板專用樣式 - 已優化欄位寬度 */
+        /* 計分板專用樣式 */
         .rank-select { width: 65px; padding: 6px 2px; border: 1px solid #ccc; border-radius: 4px; text-align: center; }
         .score-input { width: 55px; padding: 6px 2px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold; color: var(--plk-blue); }
         .total-row td { font-weight: bold; background-color: #e9ecef; font-size: 1.1em; }
@@ -237,6 +237,22 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="target-photo-box" style="margin-top: 20px; padding: 15px; background: #fdfdfd; border-radius: 8px; border: 1px dashed #b8c9d6;">
+                    <h4 style="margin-top: 0; color: var(--plk-dark); display: flex; justify-content: space-between; align-items: center;">
+                        🎯 歷屆積分目標參考 (照片目標)
+                        <button class="btn btn-blue" style="padding: 5px 12px; font-size: 0.85rem;" onclick="document.getElementById('targetImgFile').click()">📤 匯入目標相片</button>
+                    </h4>
+                    <input type="file" id="targetImgFile" accept="image/*" style="display:none" onchange="uploadTargetImage(event)">
+                    <div id="targetImgContainer" style="text-align: center; margin-top: 12px; max-width: 100%; overflow: hidden;">
+                        <p id="targetImgPlaceholder" style="color: #777; font-size: 0.9rem; padding: 30px 0; border: 2px dashed #e2e8f0; background: #f8fafc; border-radius: 6px; margin: 0;">
+                            📸 尚未匯入目標相片。您可以點擊上方按鈕，將歷屆的積分圖片或排位表上傳至此處，作為本屆隊伍拼搏的奮鬥目標！
+                        </p>
+                        <img id="targetImgDisplay" style="display:none; max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); border: 1px solid #ddd;" src="">
+                        <button id="delTargetImgBtn" class="btn btn-red" style="display:none; margin: 10px auto 0 auto; padding: 4px 10px; font-size: 0.8rem;" onclick="deleteTargetImage()">❌ 刪除相片</button>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -279,7 +295,7 @@ const CORE_STUDENTS = [
     {n:"朱兆然",y:2016,g:"F"},{n:"張穎忻",y:2016,g:"F"},{n:"陳曉澄",y:2016,g:"F"},{n:"伍熹榆",y:2016,g:"F"},{n:"黃藝之",y:2016,g:"F"},{n:"高梓翹",y:2016,g:"F"},{n:"薛雨菲",y:2016,g:"F"},{n:"葉希嵐",y:2016,g:"F"},{n:"張懷瑾",y:2016,g:"F"},{n:"張懷蔚",y:2016,g:"F"},{n:"楊倬欣",y:2016,g:"F"},{n:"陳詩晴",y:2016,g:"F"},{n:"丘倩柔",y:2016,g:"F"},
     {n:"羅啟鋒",y:2017,g:"M"},{n:"梁匡毅",y:2017,g:"M"},{n:"郭俊希",y:2017,g:"M"},{n:"盧鍵霆",y:2017,g:"M"},{n:"江柏昊",y:2017,g:"M"},{n:"鄧萃藍",y:2017,g:"M"},{n:"黃星澧",y:2017,g:"M"},{n:"彭子恪",y:2017,g:"M"},{n:"余卓謙",y:2017,g:"M"},{n:"劉栢熹",y:2017,g:"M"},{n:"胡梓賢",y:2017,g:"M"},{n:"麥風",y:2017,g:"M"},{n:"楊少琪",y:2017,g:"M"},{n:"徐梓程",y:2017,g:"M"},{n:"余焌達",y:2017,g:"M"},
     {n:"陳諾彤",y:2017,g:"F"},{n:"李思穎",y:2017,g:"F"},{n:"袁煜婷",y:2017,g:"F"},{n:"陳浠庭",y:2017,g:"F"},{n:"曾涴嘉",y:2017,g:"F"},{n:"陳迦琳",y:2017,g:"F"},{n:"焦梓涵",y:2017,g:"F"},{n:"鄧芓游",y:2017,g:"F"},{n:"蔡蔚言",y:2017,g:"F"},{n:"方一心",y:2017,g:"F"},{n:"儲思佳",y:2017,g:"F"},{n:"徐梓瑤",y:2017,g:"F"},{n:"陳希妍",y:2017,g:"F"},
-    {n:"謝瀚陞",y:2018,g:"M"},{n:"胡仲希",y:2018,g:"M"},{n:"黃語浚",y:2018,g:"M"},{n:"梁喬珀",y:2018,g:"M"},{n:"鄔嘉樂",y:2018,g:"M"},{n:"林建宇",y:2018,g:"M"},{n:"李泓亮",y:2018,g:"M"},{n:"廖柏希",y:2018,g:"M"},{n:"伍梓灝",y:2018,g:"M"},{n:"陳境逸",y:2018,g:"M"},{n:"李天仁",y:2018,g:"M"},{n:"黃洛鋋",y:2018,g:"M"},{n:"杜濼麒",y:2018,g:"M"},{n:"李宇軒",y:2018,g:"M"},
+    {n:"謝瀚陞",y:2018,g:"M"},{n:"胡仲希",y:2018,g:"M"},{n:"黃語浚",y:2018,g:"M"},{n:"梁喬珀",y:2018,g:"M"},{n:"裝嘉樂",y:2018,g:"M"},{n:"林建宇",y:2018,g:"M"},{n:"李泓亮",y:2018,g:"M"},{n:"廖柏希",y:2018,g:"M"},{n:"伍梓灝",y:2018,g:"M"},{n:"陳境逸",y:2018,g:"M"},{n:"李天仁",y:2018,g:"M"},{n:"黃洛鋋",y:2018,g:"M"},{n:"杜濼麒",y:2018,g:"M"},{n:"李宇軒",y:2018,g:"M"},
     {n:"周暟淳",y:2018,g:"F"},{n:"陳希兒",y:2018,g:"F"},{n:"鄧善殷",y:2018,g:"F"},{n:"李晉兒",y:2018,g:"F"},{n:"鄧雅殷",y:2018,g:"F"},{n:"雪壬愷",y:2018,g:"F"},{n:"邱曼露",y:2018,g:"F"},{n:"李心妤",y:2018,g:"F"},{n:"李梓雯",y:2018,g:"F"},{n:"張善愉",y:2018,g:"F"},{n:"麥稀澄",y:2018,g:"F"},{n:"童文涵",y:2018,g:"F"},{n:"林靖柔",y:2018,g:"F"}
 ];
 
@@ -339,6 +355,10 @@ window.onload = () => {
     events.forEach(e => { resEv.add(new Option(e, e)); chartEv.add(new Option(e, e)); });
     
     refreshUI();
+
+    // 載入緩存的目標相片
+    const savedImg = localStorage.getItem('ckckt_target_img');
+    if(savedImg) displayTargetImage(savedImg);
 };
 
 function refreshUI() { updateResNames(); renderRecords(); renderStudentAdmin(); renderSquadBoard(); renderHistoryTable(); }
@@ -512,7 +532,6 @@ function renderSquadBoard() {
     renderScoreBoard();
 }
 
-// 自動計算得分邏輯
 function getScoreFromRank(rank, eventName) {
     if (!rank || rank > 8) return 0; 
     const isRelay = eventName.toLowerCase().includes('4x100') || eventName.includes('接力');
@@ -521,7 +540,6 @@ function getScoreFromRank(rank, eventName) {
     return isRelay ? score * 2 : score; 
 }
 
-// ★ 即時計分板渲染邏輯 - 已修改：支援姓名完整顯示及收窄欄位 ★
 function renderScoreBoard() {
     const comp = document.getElementById('sqComp').value;
     const gKey = document.getElementById('sqGrade').value;
@@ -636,8 +654,50 @@ function filterPickerList() {
 function selectAthlete(n) { const {key, idx} = activeSlot; if(!squads[key]) squads[key]=[]; squads[key][idx]=n===""?null:n; saveAll(); renderSquadBoard(); closePicker(); }
 function closePicker() { document.getElementById('pickerModal').style.display="none"; }
 
+// 🌟 目標相片專屬邏輯控制 🌟
+function uploadTargetImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Str = e.target.result;
+        try {
+            localStorage.setItem('ckckt_target_img', base64Str);
+            displayTargetImage(base64Str);
+        } catch(err) {
+            alert("❌ 相片檔案過大，無法儲存至網頁緩存！請先將相片壓縮後再上傳（建議小於 2MB）。");
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function displayTargetImage(base64Str) {
+    const img = document.getElementById('targetImgDisplay');
+    const placeholder = document.getElementById('targetImgPlaceholder');
+    const delBtn = document.getElementById('delTargetImgBtn');
+    if (base64Str) {
+        img.src = base64Str;
+        img.style.display = 'inline-block';
+        placeholder.style.display = 'none';
+        if(delBtn) delBtn.style.display = 'block';
+    } else {
+        img.src = '';
+        img.style.display = 'none';
+        placeholder.style.display = 'block';
+        if(delBtn) delBtn.style.display = 'none';
+    }
+}
+
+function deleteTargetImage() {
+    if(confirm("確定要刪除這張目標相片嗎？")) {
+        localStorage.removeItem('ckckt_target_img');
+        displayTargetImage(null);
+        document.getElementById('targetImgFile').value = "";
+    }
+}
+
 // ==========================================
-// 成績紀錄、學生名單等常規功能 (保留不變)
+// 成績紀錄、學生名單等常規功能
 // ==========================================
 function saveRecord() {
     const id = document.getElementById('editModeId').value, name = document.getElementById('resName').value, val = parseFloat(document.getElementById('resVal').value);
